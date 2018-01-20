@@ -1,4 +1,4 @@
-//DA REAL ROBOTO CODEO 2018	
+//Robot-Code-2018 from Missfits github Acc
 package org.usfirst.frc.team6418.robot;
 
 import edu.wpi.first.wpilibj.IterativeRobot;
@@ -12,11 +12,12 @@ import org.usfirst.frc.team6418.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.RobotDrive;
-import edu.wpi.first.wpilibj.RobotDrive.MotorType;
-import edu.wpi.first.wpilibj.SampleRobot;
+import edu.wpi.first.wpilibj.Spark;
+//import edu.wpi.first.wpilibj.RobotDrive;
+//import edu.wpi.first.wpilibj.RobotDrive.MotorType;
+//import edu.wpi.first.wpilibj.SampleRobot;
 import edu.wpi.first.wpilibj.Timer;
-
+import edu.wpi.first.wpilibj.drive.MecanumDrive;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -28,13 +29,16 @@ import edu.wpi.first.wpilibj.Timer;
 public class Robot extends IterativeRobot {
 
 	//these next few lines of code create the mecanum drive interface for our bot 		
-	RobotDrive robotDrive;
+//	RobotDrive robotDrive;
+	MecanumDrive robotDrive;
 
 	// Channels for the wheels
-	final int kFrontLeftChannel = 2;
-	final int kRearLeftChannel = 3;
-	final int kFrontRightChannel = 1;
-	final int kRearRightChannel = 0;
+	//changed them from ints to Spark SpeedControllers to work with MecanumDrive
+	final Spark kFrontLeftChannel = new Spark (2);
+	final Spark kRearLeftChannel = new Spark (3);
+	final Spark kFrontRightChannel = new Spark (1);
+	final Spark kRearRightChannel = new Spark (0);
+	
 
 	// The channel on the driver station that the joystick is connected to
 	final int kJoystickChannel = 0;
@@ -61,15 +65,13 @@ public class Robot extends IterativeRobot {
 		
 	//copied from the Mecanum Drive example class	
 		//was in a separate class before, public Robot (){
-		robotDrive = new RobotDrive(kFrontLeftChannel, kRearLeftChannel, kFrontRightChannel, kRearRightChannel);
-		robotDrive.setInvertedMotor(MotorType.kFrontLeft, true); // invert the
-																	// left side
-																	// motors
-		robotDrive.setInvertedMotor(MotorType.kRearLeft, true); // you may need
-																// to change or
-																// remove this
-																// to match your
-																// robot
+		robotDrive = new MecanumDrive(kFrontLeftChannel, kRearLeftChannel, kFrontRightChannel, kRearRightChannel);
+	
+		kFrontLeftChannel.setInverted(true);
+		kRearLeftChannel.setInverted(true);
+		// invert the left side motors
+		//may need to change or remove to match the robot
+		
 		robotDrive.setExpiration(0.1);
 	}
 
@@ -143,7 +145,9 @@ public class Robot extends IterativeRobot {
 		//https://wpilib.screenstepslive.com/s/currentCS/m/java/l/599704-driving-a-robot-using-mecanum-drive
 		//use x and y to move forward or strafe (sliding), use z (twisty) axis to turn
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
-		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
+//		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
+		
+		robotDrive.driveCartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
 		
 		//pretty sure the gyro might be able to align the robot to the field, it will turn based on the field
 		//IF YOU ADD ANOTHER PARAMETER, THE GYRO ANGLE, IT BECOMES FIELD-ORIENTED
@@ -164,6 +168,5 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void testPeriodic() {
-		LiveWindow.run();
 	}
 }
