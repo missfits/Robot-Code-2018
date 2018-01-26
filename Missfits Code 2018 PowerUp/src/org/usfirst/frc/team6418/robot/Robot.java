@@ -11,8 +11,12 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.usfirst.frc.team6418.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Spark;
+//import edu.wpi.first.wpilibj.can;
 //import edu.wpi.first.wpilibj.RobotDrive;
 //import edu.wpi.first.wpilibj.RobotDrive.MotorType;
 //import edu.wpi.first.wpilibj.SampleRobot;
@@ -34,11 +38,14 @@ public class Robot extends IterativeRobot {
 
 	// Channels for the wheels
 	//changed them from ints to Spark SpeedControllers to work with MecanumDrive
+	
 	final Spark kFrontLeftChannel = new Spark (2);
 	final Spark kRearLeftChannel = new Spark (3);
 	final Spark kFrontRightChannel = new Spark (1);
 	final Spark kRearRightChannel = new Spark (0);
 	
+	
+	TalonSRX talon = new TalonSRX(1);
 
 	// The channel on the driver station that the joystick is connected to
 	final int kJoystickChannel = 0;
@@ -146,6 +153,8 @@ public class Robot extends IterativeRobot {
 		//use x and y to move forward or strafe (sliding), use z (twisty) axis to turn
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
+		
+		talon.set(ControlMode.PercentOutput, stick.getY());
 		
 		robotDrive.driveCartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
 		
