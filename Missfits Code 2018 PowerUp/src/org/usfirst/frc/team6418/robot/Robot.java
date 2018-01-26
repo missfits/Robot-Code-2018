@@ -16,10 +16,11 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Spark;
-//import edu.wpi.first.wpilibj.can;
+
 //import edu.wpi.first.wpilibj.RobotDrive;
 //import edu.wpi.first.wpilibj.RobotDrive.MotorType;
 //import edu.wpi.first.wpilibj.SampleRobot;
+
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
 
@@ -44,7 +45,7 @@ public class Robot extends IterativeRobot {
 	final Spark kFrontRightChannel = new Spark (1);
 	final Spark kRearRightChannel = new Spark (0);
 	
-	
+	// Talon test motor controller (CAN ID 1)
 	TalonSRX talon = new TalonSRX(1);
 
 	// The channel on the driver station that the joystick is connected to
