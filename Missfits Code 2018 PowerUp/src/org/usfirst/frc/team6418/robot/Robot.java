@@ -1,28 +1,16 @@
 //Robot-Code-2018 from Missfits github Acc
 package org.usfirst.frc.team6418.robot;
 
-import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.command.Command;
-import edu.wpi.first.wpilibj.command.Scheduler;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
 import org.usfirst.frc.team6418.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-
+import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Spark;
-
-//import edu.wpi.first.wpilibj.RobotDrive;
-//import edu.wpi.first.wpilibj.RobotDrive.MotorType;
-//import edu.wpi.first.wpilibj.SampleRobot;
-
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -34,20 +22,16 @@ import edu.wpi.first.wpilibj.drive.MecanumDrive;
 public class Robot extends IterativeRobot {
 
 	//these next few lines of code create the mecanum drive interface for our bot 		
-//	RobotDrive robotDrive;
 	MecanumDrive robotDrive;
 
 	// Channels for the wheels
-	//changed them from ints to Spark SpeedControllers to work with MecanumDrive
+		
+	final WPITalon kFrontLeftChannel = new WPITalon (2);
+	final WPITalon kRearLeftChannel = new WPITalon (3);
+	final WPITalon kFrontRightChannel = new WPITalon (1);
+	final WPITalon kRearRightChannel = new WPITalon (0);
 	
-	final Spark kFrontLeftChannel = new Spark (2);
-	final Spark kRearLeftChannel = new Spark (3);
-	final Spark kFrontRightChannel = new Spark (1);
-	final Spark kRearRightChannel = new Spark (0);
 	
-	// Talon test motor controller (CAN ID 1)
-	TalonSRX talon = new TalonSRX(1);
-
 	// The channel on the driver station that the joystick is connected to
 	final int kJoystickChannel = 0;
 
@@ -64,6 +48,7 @@ public class Robot extends IterativeRobot {
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
 	 */
+	
 	@Override
 	public void robotInit() {
 		oi = new OI();
@@ -154,7 +139,6 @@ public class Robot extends IterativeRobot {
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
-		talon.set(ControlMode.PercentOutput, stick.getY());
 		
 		robotDrive.driveCartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
 		
