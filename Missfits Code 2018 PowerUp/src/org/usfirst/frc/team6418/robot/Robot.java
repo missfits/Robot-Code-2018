@@ -71,14 +71,13 @@ public class Robot extends IterativeRobot {
 		// chooser.addObject("My Auto", new MyAutoCommand());
 		SmartDashboard.putData("Auto mode", chooser);
 		
-	//copied from the Mecanum Drive example class	
-		//was in a separate class before, public Robot (){
+		// copied from the Mecanum Drive example class; was in a separate class before: public Robot (){
 		robotDrive = new MecanumDrive(kFrontLeftChannel, kRearLeftChannel, kFrontRightChannel, kRearRightChannel);
 	
 		kFrontLeftChannel.setInverted(true);
 		kRearLeftChannel.setInverted(true);
 		// invert the left side motors
-		//may need to change or remove to match the robot
+		// may need to change or remove to match the robot
 		
 		robotDrive.setExpiration(0.1);
 	}
