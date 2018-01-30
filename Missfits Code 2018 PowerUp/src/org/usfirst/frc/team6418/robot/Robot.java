@@ -33,9 +33,11 @@ public class Robot extends IterativeRobot {
 	
 	
 	// The channel on the driver station that the joystick is connected to
-	final int kJoystickChannel = 0;
+	final int rightJoystickChannel = 0;
+	final int leftJoystickChannel = 1;
 
-	Joystick stick = new Joystick(kJoystickChannel);
+	Joystick rightStick = new Joystick(rightJoystickChannel);
+	Joystick leftStick = new Joystick(leftJoystickChannel);
 
 	//this next line will probably need to be changed... 
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
@@ -81,6 +83,7 @@ public class Robot extends IterativeRobot {
 	public void disabledPeriodic() {
 		Scheduler.getInstance().run();
 	}
+	
 
 	/**
 	 * This autonomous (along with the chooser code above) shows how to select
@@ -140,7 +143,10 @@ public class Robot extends IterativeRobot {
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
 		
-		robotDrive.driveCartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
+		robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), 0.0);
+		//right joystick for forwards/back and strafing
+		//left joystick controlls yaw (spinning)
+		
 		
 		//pretty sure the gyro might be able to align the robot to the field, it will turn based on the field
 		//IF YOU ADD ANOTHER PARAMETER, THE GYRO ANGLE, IT BECOMES FIELD-ORIENTED
