@@ -29,8 +29,9 @@ public class Robot extends IterativeRobot {
 	final WPITalon kFrontLeftChannel = new WPITalon (2);
 	final WPITalon kRearLeftChannel = new WPITalon (3);
 	final WPITalon kFrontRightChannel = new WPITalon (1);
-	final WPITalon kRearRightChannel = new WPITalon (0);
+	final WPITalon kRearRightChannel = new WPITalon (4);
 	
+
 	
 	// The channel on the driver station that the joystick is connected to
 	final int rightJoystickChannel = 0;
