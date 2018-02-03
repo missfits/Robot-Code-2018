@@ -1,23 +1,16 @@
 //Robot-Code-2018 from Missfits github Acc
 package org.usfirst.frc.team6418.robot;
 
-import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.command.Command;
-import edu.wpi.first.wpilibj.command.Scheduler;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
 import org.usfirst.frc.team6418.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 
+import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Spark;
-//import edu.wpi.first.wpilibj.RobotDrive;
-//import edu.wpi.first.wpilibj.RobotDrive.MotorType;
-//import edu.wpi.first.wpilibj.SampleRobot;
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -29,21 +22,23 @@ import edu.wpi.first.wpilibj.drive.MecanumDrive;
 public class Robot extends IterativeRobot {
 
 	//these next few lines of code create the mecanum drive interface for our bot 		
-//	RobotDrive robotDrive;
 	MecanumDrive robotDrive;
 
 	// Channels for the wheels
-	//changed them from ints to Spark SpeedControllers to work with MecanumDrive
-	final Spark kFrontLeftChannel = new Spark (2);
-	final Spark kRearLeftChannel = new Spark (3);
-	final Spark kFrontRightChannel = new Spark (1);
-	final Spark kRearRightChannel = new Spark (0);
+		
+	final WPITalon kFrontLeftChannel = new WPITalon (2);
+	final WPITalon kRearLeftChannel = new WPITalon (3);
+	final WPITalon kFrontRightChannel = new WPITalon (1);
+	final WPITalon kRearRightChannel = new WPITalon (4);
 	
 
+	
 	// The channel on the driver station that the joystick is connected to
-	final int kJoystickChannel = 0;
+	final int rightJoystickChannel = 0;
+	final int leftJoystickChannel = 1;
 
-	Joystick stick = new Joystick(kJoystickChannel);
+	Joystick rightStick = new Joystick(rightJoystickChannel);
+	Joystick leftStick = new Joystick(leftJoystickChannel);
 
 	//this next line will probably need to be changed... 
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
@@ -56,6 +51,7 @@ public class Robot extends IterativeRobot {
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
 	 */
+	
 	@Override
 	public void robotInit() {
 		oi = new OI();
@@ -63,14 +59,13 @@ public class Robot extends IterativeRobot {
 		// chooser.addObject("My Auto", new MyAutoCommand());
 		SmartDashboard.putData("Auto mode", chooser);
 		
-	//copied from the Mecanum Drive example class	
-		//was in a separate class before, public Robot (){
+		// copied from the Mecanum Drive example class; was in a separate class before: public Robot (){
 		robotDrive = new MecanumDrive(kFrontLeftChannel, kRearLeftChannel, kFrontRightChannel, kRearRightChannel);
 	
 		kFrontLeftChannel.setInverted(true);
 		kRearLeftChannel.setInverted(true);
 		// invert the left side motors
-		//may need to change or remove to match the robot
+		// may need to change or remove to match the robot
 		
 		robotDrive.setExpiration(0.1);
 	}
@@ -89,6 +84,7 @@ public class Robot extends IterativeRobot {
 	public void disabledPeriodic() {
 		Scheduler.getInstance().run();
 	}
+	
 
 	/**
 	 * This autonomous (along with the chooser code above) shows how to select
@@ -147,7 +143,11 @@ public class Robot extends IterativeRobot {
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
-		robotDrive.driveCartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
+		
+		robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), 0.0);
+		//right joystick for forwards/back and strafing
+		//left joystick controlls yaw (spinning)
+		
 		
 		//pretty sure the gyro might be able to align the robot to the field, it will turn based on the field
 		//IF YOU ADD ANOTHER PARAMETER, THE GYRO ANGLE, IT BECOMES FIELD-ORIENTED
