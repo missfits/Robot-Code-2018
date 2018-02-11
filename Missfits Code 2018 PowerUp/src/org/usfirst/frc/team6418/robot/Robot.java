@@ -7,6 +7,7 @@ import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
@@ -15,7 +16,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.Timer;
-
+import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.buttons.*;
 
 
@@ -37,6 +38,16 @@ public class Robot extends IterativeRobot {
 	final WPITalon kRearLeftChannel = new WPITalon (3);
 	final WPITalon kFrontRightChannel = new WPITalon (1);
 	final WPITalon kRearRightChannel = new WPITalon (4);
+	
+	VictorSP intakeRight = new VictorSP (0);
+	VictorSP intakeLeft = new VictorSP (1);
+	
+	VictorSP climber1 = new VictorSP (2);
+	VictorSP climber2 = new VictorSP (3);
+	
+	Spark elevatorMotor = new Spark(4);
+	
+	
 
 	
 	// The channel on the driver station that the joystick is connected to
@@ -52,7 +63,7 @@ public class Robot extends IterativeRobot {
 
 	// DoubleSolenoid solenoid = new DoubleSolenoid(1, 2);
 	public Compressor c = new Compressor (0);
-	public DoubleSolenoid dSolenoid= new DoubleSolenoid(2, 3);
+	public DoubleSolenoid intakeSolenoid= new DoubleSolenoid(2, 3);
 	public static Timer myTimer = new Timer();
 	public static Timer solenoidTimer = new Timer();
 	
@@ -168,12 +179,16 @@ public class Robot extends IterativeRobot {
 		robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), 0.0);
 		//makes pneumatics shoot out if right trigger is pressed and shoot back in when released
 		if(rightStick.getRawButton(1)){
-			dSolenoid.set(DoubleSolenoid.Value.kForward);
-		}else{
-			dSolenoid.set(DoubleSolenoid.Value.kReverse);
+			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
 		}
+		else{
+			intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
+		}
+		//we can change it to toggle with the button later.... talk to the drivers. 
+
+		
 		//right joystick for forwards/back and strafing
-		//left joystick controlls yaw (spinning)
+		//left joystick controlls yaw (spinning)g
 		
 		
 		//pretty sure the gyro might be able to align the robot to the field, it will turn based on the field
