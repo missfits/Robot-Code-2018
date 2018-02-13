@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.buttons.*;
@@ -33,6 +34,10 @@ public class Robot extends IterativeRobot {
 	MecanumDrive robotDrive;
 
 	// Channels for the wheels
+	
+	final DigitalInput limitSwitch1 = new DigitalInput(0);
+	
+	
 		
 	final WPITalon kFrontLeftChannel = new WPITalon (2);
 	final WPITalon kRearLeftChannel = new WPITalon (3);
@@ -53,9 +58,11 @@ public class Robot extends IterativeRobot {
 	// The channel on the driver station that the joystick is connected to
 	final int rightJoystickChannel = 0;
 	final int leftJoystickChannel = 1;
+	final int xBoxChannel = 2;
 
 	Joystick rightStick = new Joystick(rightJoystickChannel);
 	Joystick leftStick = new Joystick(leftJoystickChannel);
+	Joystick xBox = new Joystick(xBoxChannel);
 
 	//this next line will probably need to be changed... 
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
@@ -184,6 +191,15 @@ public class Robot extends IterativeRobot {
 		else{
 			intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
+		
+		//halie trying to use joysticks to run elevator
+		
+	//	Spark elevatorMotor = new Spark(4);
+		
+		elevatorMotor.set(xBox.getY());
+		
+		
+		
 		//we can change it to toggle with the button later.... talk to the drivers. 
 
 		
