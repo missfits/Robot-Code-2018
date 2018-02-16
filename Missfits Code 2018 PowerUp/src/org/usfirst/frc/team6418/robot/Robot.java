@@ -75,6 +75,15 @@ public class Robot extends IterativeRobot {
 	public static Timer solenoidTimer = new Timer();
 	
 	public Button trigger = new JoystickButton(rightStick,1);
+	public Button xBoxA = new JoystickButton(xBox,1);
+	public Button xBoxB = new JoystickButton(xBox,2);
+	public Button xBoxX = new JoystickButton(xBox,3);
+	public Button xBoxY = new JoystickButton(xBox,4);
+	public Button xBoxLeftBumper = new JoystickButton(xBox,5);
+	public Button xBoxRightBumper = new JoystickButton(xBox,6);
+	public Button xBoxStart = new JoystickButton(xBox,8);
+
+	
 	
 	Command autonomousCommand;
 	SendableChooser<Command> chooser = new SendableChooser<>();
@@ -183,6 +192,11 @@ public class Robot extends IterativeRobot {
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
 			
+		double xBoxLeftTrigger = xBox.getRawAxis(2);
+		double xBoxRightTrigger = xBox.getRawAxis(3);
+		double xBoxLeftJoystickY = xBox.getRawAxis(1);
+		double xBoxRightJoystickY = xBox.getRawAxis(5);
+		
 		robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), 0.0);
 		//makes pneumatics shoot out if right trigger is pressed and shoot back in when released
 		if(rightStick.getRawButton(1)){
@@ -194,8 +208,16 @@ public class Robot extends IterativeRobot {
 		
 		//halie trying to use joysticks to run elevator
 		
-	//	Spark elevatorMotor = new Spark(4);
+		//Spark elevatorMotor = new Spark(4);
 		
+		
+	/*	here: if the top limit switch has not been pressed yet
+			you can keep moving up
+		if it is moving downward && the bottom limit switch has not been pressed 
+		should we have a state variable? 
+		do all this logic in the elevator subsystem code. ;
+	*/
+				
 		elevatorMotor.set(xBox.getY());
 		
 		
@@ -222,36 +244,7 @@ public class Robot extends IterativeRobot {
 		
 	    // solenoid.set(DoubleSolenoid.Value.kReverse);
 		
-		/*c.setClosedLoopControl(true);
-		boolean enabled = c.enabled();
-		boolean pressureSwitch = c.getPressureSwitchValue();
-		double current = c.getCompressorCurrent();
-		
-		for (int k = 5; k < 20; k+=4) {
-			if (solenoidTimer.get() == k) {
-			 	dSolenoid.set(DoubleSolenoid.Value.kForward);
-			 	//	System.out.println("SET ME FORWARD AT " + current);
-			}
-			//do i need this else if?
-			else if (solenoidTimer.get() == k+1){
-			dSolenoid.set(DoubleSolenoid.Value.kOff);
-			//	System.out.println("SET ME OFF AT " + current);
-			} 
-			else if (solenoidTimer.get() == k+2) {
-				dSolenoid.set(DoubleSolenoid.Value.kReverse);
-				//	System.out.println("SET ME REVERSE AT " + current);
-			 }
-			 //commenting out to see what happens
-			 else if (solenoidTimer.get() == k+3) {
-				 dSolenoid.set(DoubleSolenoid.Value.kOff);
-			 	//	System.out.println("SET ME OFF AGAIN AT " + current);
-			 } 
-			 else {
-			 	dSolenoid.set(DoubleSolenoid.Value.kOff);
-			 	//	System.out.println("SET ME OFF " + current);
-			 }
-		
-		}*/
+
 		
     }
 	
