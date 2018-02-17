@@ -1,23 +1,25 @@
 //Robot-Code-2018 from Missfits github Acc
 package org.usfirst.frc.team6418.robot;
 
-import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.command.Command;
-import edu.wpi.first.wpilibj.command.Scheduler;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
 import org.usfirst.frc.team6418.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 
+import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Spark;
-//import edu.wpi.first.wpilibj.RobotDrive;
-//import edu.wpi.first.wpilibj.RobotDrive.MotorType;
-//import edu.wpi.first.wpilibj.SampleRobot;
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.VictorSP;
+import edu.wpi.first.wpilibj.buttons.*;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -29,26 +31,51 @@ import edu.wpi.first.wpilibj.drive.MecanumDrive;
 public class Robot extends IterativeRobot {
 
 	//these next few lines of code create the mecanum drive interface for our bot 		
-//	RobotDrive robotDrive;
 	MecanumDrive robotDrive;
 
 	// Channels for the wheels
-	//changed them from ints to Spark SpeedControllers to work with MecanumDrive
-	final Spark kFrontLeftChannel = new Spark (2);
-	final Spark kRearLeftChannel = new Spark (3);
-	final Spark kFrontRightChannel = new Spark (1);
-	final Spark kRearRightChannel = new Spark (0);
+	
+	final DigitalInput limitSwitch1 = new DigitalInput(0);
+	
+	
+		
+	final WPITalon kFrontLeftChannel = new WPITalon (2);
+	final WPITalon kRearLeftChannel = new WPITalon (3);
+	final WPITalon kFrontRightChannel = new WPITalon (1);
+	final WPITalon kRearRightChannel = new WPITalon (4);
+	
+	VictorSP intakeRight = new VictorSP (0);
+	VictorSP intakeLeft = new VictorSP (1);
+	
+	VictorSP climber1 = new VictorSP (2);
+	VictorSP climber2 = new VictorSP (3);
+	
+	Spark elevatorMotor = new Spark(4);
+	
 	
 
+	
 	// The channel on the driver station that the joystick is connected to
-	final int kJoystickChannel = 0;
+	final int rightJoystickChannel = 0;
+	final int leftJoystickChannel = 1;
+	final int xBoxChannel = 2;
 
-	Joystick stick = new Joystick(kJoystickChannel);
+	Joystick rightStick = new Joystick(rightJoystickChannel);
+	Joystick leftStick = new Joystick(leftJoystickChannel);
+	Joystick xBox = new Joystick(xBoxChannel);
 
 	//this next line will probably need to be changed... 
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
 	public static OI oi;
 
+	// DoubleSolenoid solenoid = new DoubleSolenoid(1, 2);
+	public Compressor c = new Compressor (0);
+	public DoubleSolenoid intakeSolenoid= new DoubleSolenoid(2, 3);
+	public static Timer myTimer = new Timer();
+	public static Timer solenoidTimer = new Timer();
+	
+	public Button trigger = new JoystickButton(rightStick,1);
+	
 	Command autonomousCommand;
 	SendableChooser<Command> chooser = new SendableChooser<>();
 
@@ -56,6 +83,7 @@ public class Robot extends IterativeRobot {
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
 	 */
+	
 	@Override
 	public void robotInit() {
 		oi = new OI();
@@ -63,14 +91,13 @@ public class Robot extends IterativeRobot {
 		// chooser.addObject("My Auto", new MyAutoCommand());
 		SmartDashboard.putData("Auto mode", chooser);
 		
-	//copied from the Mecanum Drive example class	
-		//was in a separate class before, public Robot (){
+		// copied from the Mecanum Drive example class; was in a separate class before: public Robot (){
 		robotDrive = new MecanumDrive(kFrontLeftChannel, kRearLeftChannel, kFrontRightChannel, kRearRightChannel);
 	
 		kFrontLeftChannel.setInverted(true);
 		kRearLeftChannel.setInverted(true);
 		// invert the left side motors
-		//may need to change or remove to match the robot
+		// may need to change or remove to match the robot
 		
 		robotDrive.setExpiration(0.1);
 	}
@@ -89,6 +116,7 @@ public class Robot extends IterativeRobot {
 	public void disabledPeriodic() {
 		Scheduler.getInstance().run();
 	}
+	
 
 	/**
 	 * This autonomous (along with the chooser code above) shows how to select
@@ -133,6 +161,12 @@ public class Robot extends IterativeRobot {
 		// this line or comment it out.
 		if (autonomousCommand != null)
 			autonomousCommand.cancel();
+		
+		// solenoid.set(DoubleSolenoid.Value.kOff);
+		// solenoid.set(DoubleSolenoid.Value.kForward);
+		solenoidTimer.reset();
+		solenoidTimer.start();
+		
 	}
 
 	/**
@@ -141,13 +175,37 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void teleopPeriodic() {
 		Scheduler.getInstance().run();
+		
 		//next line is from FRC Screen Steps Live 
 		//https://wpilib.screenstepslive.com/s/currentCS/m/java/l/599704-driving-a-robot-using-mecanum-drive
 		//use x and y to move forward or strafe (sliding), use z (twisty) axis to turn
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
-		robotDrive.driveCartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
+			
+		robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), 0.0);
+		//makes pneumatics shoot out if right trigger is pressed and shoot back in when released
+		if(rightStick.getRawButton(1)){
+			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
+		}
+		else{
+			intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
+		}
+		
+		//halie trying to use joysticks to run elevator
+		
+	//	Spark elevatorMotor = new Spark(4);
+		
+		elevatorMotor.set(xBox.getY());
+		
+		
+		
+		//we can change it to toggle with the button later.... talk to the drivers. 
+
+		
+		//right joystick for forwards/back and strafing
+		//left joystick controlls yaw (spinning)g
+		
 		
 		//pretty sure the gyro might be able to align the robot to the field, it will turn based on the field
 		//IF YOU ADD ANOTHER PARAMETER, THE GYRO ANGLE, IT BECOMES FIELD-ORIENTED
@@ -159,6 +217,42 @@ public class Robot extends IterativeRobot {
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(), gyro.getAngle());
 		
 		//we have to pick one or the other for the two lines^^
+		
+		//trying to operate pneumatics 2/2/18
+		
+	    // solenoid.set(DoubleSolenoid.Value.kReverse);
+		
+		/*c.setClosedLoopControl(true);
+		boolean enabled = c.enabled();
+		boolean pressureSwitch = c.getPressureSwitchValue();
+		double current = c.getCompressorCurrent();
+		
+		for (int k = 5; k < 20; k+=4) {
+			if (solenoidTimer.get() == k) {
+			 	dSolenoid.set(DoubleSolenoid.Value.kForward);
+			 	//	System.out.println("SET ME FORWARD AT " + current);
+			}
+			//do i need this else if?
+			else if (solenoidTimer.get() == k+1){
+			dSolenoid.set(DoubleSolenoid.Value.kOff);
+			//	System.out.println("SET ME OFF AT " + current);
+			} 
+			else if (solenoidTimer.get() == k+2) {
+				dSolenoid.set(DoubleSolenoid.Value.kReverse);
+				//	System.out.println("SET ME REVERSE AT " + current);
+			 }
+			 //commenting out to see what happens
+			 else if (solenoidTimer.get() == k+3) {
+				 dSolenoid.set(DoubleSolenoid.Value.kOff);
+			 	//	System.out.println("SET ME OFF AGAIN AT " + current);
+			 } 
+			 else {
+			 	dSolenoid.set(DoubleSolenoid.Value.kOff);
+			 	//	System.out.println("SET ME OFF " + current);
+			 }
+		
+		}*/
+		
     }
 	
 	//lets see if i can push changes :)
