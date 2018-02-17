@@ -34,7 +34,7 @@ public class Robot extends IterativeRobot {
 
 	//these next few lines of code create the mecanum drive interface for our bot 		
 	MecanumDrive robotDrive;
-//	DifferentialDrive robotDrive2;
+	DifferentialDrive robotDrive2;
 
 	// Channels for the wheels
 	
@@ -201,14 +201,27 @@ public class Robot extends IterativeRobot {
 		double xBoxLeftJoystickY = xBox.getRawAxis(1);
 		double xBoxRightJoystickY = xBox.getRawAxis(5);
 		
+		double leftJoystickX = leftStick.getX();
+		double leftJoystickY = leftStick.getY();
+		double rightJoystickX = rightStick.getX();
+		double rightJoystickY = rightStick.getY();
 		 //gonna have to put boolean to make sure climber code doesn't run unless at right height
-		climber1.set(xBoxLeftJoystickY);
-		climber2.set(xBoxLeftJoystickY);
 		
-		elevatorMotor.set(xBoxRightJoystickY);
-		//elevator manual climbing
-	
 		
+		
+		if (Math.abs(xBoxLeftJoystickY) > 0.1){
+			climber1.set(xBoxLeftJoystickY);
+			climber2.set(xBoxLeftJoystickY);
+			//we don't want to use the joystick for the climber; use the START button to climb once it gets to X climber height
+		}
+		
+		
+		if (Math.abs(xBoxRightJoystickY) > 0.1){
+			elevatorMotor.set(xBoxRightJoystickY);
+			//elevator manual climbing
+		}
+		
+
 		if(xBoxRightTrigger > 0){
 			intakeRight.set(0.8);
 			intakeLeft.set(0.8);
@@ -221,21 +234,41 @@ public class Robot extends IterativeRobot {
 			intakeRight.set(0);
 			intakeLeft.set(0);
 		}
-//		robotDrive2.tankDrive(leftSpeed, rightSpeed);
-		robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), gyro.getAngle());
+		
+		
+		//double minX = Math.min(Math.abs(leftJoystickX), Math.abs(rightJoystickX));
+		if (Math.abs(rightJoystickX) > 0.2) {
+			kFrontLeftChannel.set(-rightJoystickX);
+			kRearRightChannel.set(-rightJoystickX);
+			kFrontRightChannel.set(rightJoystickX);
+			kRearLeftChannel.set(rightJoystickX);
+			//manual strafing
+		} else {
+			kFrontLeftChannel.set(leftJoystickY);
+			kRearLeftChannel.set(leftJoystickY);
+			kFrontRightChannel.set(rightJoystickY);
+			kRearRightChannel.set(rightJoystickY);
+			//manual tank drive
+		}
+		//robotDrive.driveCartesian(rightJoystickY, -rightJoystickX, -rightStick.getZ(), 0);
+		//robotDrive2.tankDrive(leftStick.getY(), rightStick.getY());
+		/*if(Math.abs(rightJoystickX) > 0.1 || Math.abs(leftJoystickX)> 0.1){
+			robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), gyro.getAngle());
+		}else{
+			//robotDrive2.tankDrive(leftStick.getY(), rightStick.getY());
+		}*/
 		//makes pneumatics shoot out if right trigger is pressed and shoot back in when released
-		if(rightStick.getRawButton(1)){
+		if(xBox.getRawButton(6)){
+			//button 6 is right bumper
 			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
 		}
-		else{
+		else if(xBox.getRawButton(5)){
 			intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
-		
-		
-		//halie trying to use joysticks to run elevator
-		
-		//Spark elevatorMotor = new Spark(4);
-		
+		else{
+			intakeSolenoid.set(DoubleSolenoid.Value.kOff);
+		}
+				
 		
 	/*	here: if the top limit switch has not been pressed yet
 			you can keep moving up
@@ -243,8 +276,6 @@ public class Robot extends IterativeRobot {
 		should we have a state variable? 
 		do all this logic in the elevator subsystem code. ;
 	*/
-				
-		elevatorMotor.set(xBox.getY());
 		
 		
 		
