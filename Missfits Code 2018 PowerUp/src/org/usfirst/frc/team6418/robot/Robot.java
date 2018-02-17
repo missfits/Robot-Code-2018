@@ -4,6 +4,8 @@ package org.usfirst.frc.team6418.robot;
 import org.usfirst.frc.team6418.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 
+
+
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
@@ -69,6 +71,8 @@ public class Robot extends IterativeRobot {
 	// DoubleSolenoid solenoid = new DoubleSolenoid(1, 2);
 	public Compressor c = new Compressor (0);
 	public DoubleSolenoid intakeSolenoid= new DoubleSolenoid(2, 3);
+	public DoubleSolenoid climberSolenoid = new DoubleSolenoid(0,1);
+	
 	public static Timer myTimer = new Timer();
 	public static Timer solenoidTimer = new Timer();
 	
@@ -180,6 +184,7 @@ public class Robot extends IterativeRobot {
 
 		gyro.reset();
 		
+		climberSolenoid.set(DoubleSolenoid.Value.kForward);
 		
 	}
 
@@ -222,6 +227,11 @@ public class Robot extends IterativeRobot {
 		}
 		
 
+		
+		//CLIMBER the climber Solenoid, turn on when START button pressed
+		
+		
+		
 		if(xBoxRightTrigger > 0){
 			intakeRight.set(0.8);
 			intakeLeft.set(0.8);
@@ -277,6 +287,14 @@ public class Robot extends IterativeRobot {
 		do all this logic in the elevator subsystem code. ;
 	*/
 		
+		if (xBox.getRawButton(7)) {
+			//7 SHOULD BE THE BACK BUTTON
+			climberSolenoid.set(DoubleSolenoid.Value.kReverse);
+		}
+		else if (xBox.getRawButton(8)){
+			//8 should be START button
+			climberSolenoid.set(DoubleSolenoid.Value.kForward);
+		}
 		
 		
 		//we can change it to toggle with the button later.... talk to the drivers. 
