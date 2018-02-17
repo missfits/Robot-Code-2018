@@ -11,14 +11,16 @@ import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.buttons.*;
+
 
 
 /**
@@ -32,12 +34,11 @@ public class Robot extends IterativeRobot {
 
 	//these next few lines of code create the mecanum drive interface for our bot 		
 	MecanumDrive robotDrive;
+//	DifferentialDrive robotDrive2;
 
 	// Channels for the wheels
 	
 	final DigitalInput limitSwitch1 = new DigitalInput(0);
-	
-	
 		
 	final WPITalon kFrontLeftChannel = new WPITalon (2);
 	final WPITalon kRearLeftChannel = new WPITalon (3);
@@ -51,9 +52,6 @@ public class Robot extends IterativeRobot {
 	VictorSP climber2 = new VictorSP (3);
 	
 	Spark elevatorMotor = new Spark(4);
-	
-	
-
 	
 	// The channel on the driver station that the joystick is connected to
 	final int rightJoystickChannel = 0;
@@ -74,6 +72,10 @@ public class Robot extends IterativeRobot {
 	public static Timer myTimer = new Timer();
 	public static Timer solenoidTimer = new Timer();
 	
+	public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
+
+	
+	
 	public Button trigger = new JoystickButton(rightStick,1);
 	public Button xBoxA = new JoystickButton(xBox,1);
 	public Button xBoxB = new JoystickButton(xBox,2);
@@ -82,7 +84,6 @@ public class Robot extends IterativeRobot {
 	public Button xBoxLeftBumper = new JoystickButton(xBox,5);
 	public Button xBoxRightBumper = new JoystickButton(xBox,6);
 	public Button xBoxStart = new JoystickButton(xBox,8);
-
 	
 	
 	Command autonomousCommand;
@@ -109,6 +110,7 @@ public class Robot extends IterativeRobot {
 		// may need to change or remove to match the robot
 		
 		robotDrive.setExpiration(0.1);
+	
 	}
 
 	/**
@@ -175,6 +177,9 @@ public class Robot extends IterativeRobot {
 		// solenoid.set(DoubleSolenoid.Value.kForward);
 		solenoidTimer.reset();
 		solenoidTimer.start();
+
+		gyro.reset();
+		
 		
 	}
 
@@ -191,13 +196,33 @@ public class Robot extends IterativeRobot {
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
-			
 		double xBoxLeftTrigger = xBox.getRawAxis(2);
 		double xBoxRightTrigger = xBox.getRawAxis(3);
 		double xBoxLeftJoystickY = xBox.getRawAxis(1);
 		double xBoxRightJoystickY = xBox.getRawAxis(5);
 		
-		robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), 0.0);
+		 //gonna have to put boolean to make sure climber code doesn't run unless at right height
+		climber1.set(xBoxLeftJoystickY);
+		climber2.set(xBoxLeftJoystickY);
+		
+		elevatorMotor.set(xBoxRightJoystickY);
+		//elevator manual climbing
+	
+		
+		if(xBoxRightTrigger > 0){
+			intakeRight.set(0.8);
+			intakeLeft.set(0.8);
+		}
+		else if (xBoxLeftTrigger > 0){
+			intakeRight.set(-0.8);
+			intakeLeft.set(-0.8);
+		}
+		else {
+			intakeRight.set(0);
+			intakeLeft.set(0);
+		}
+//		robotDrive2.tankDrive(leftSpeed, rightSpeed);
+		robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), gyro.getAngle());
 		//makes pneumatics shoot out if right trigger is pressed and shoot back in when released
 		if(rightStick.getRawButton(1)){
 			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
@@ -205,6 +230,7 @@ public class Robot extends IterativeRobot {
 		else{
 			intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
+		
 		
 		//halie trying to use joysticks to run elevator
 		
@@ -243,7 +269,7 @@ public class Robot extends IterativeRobot {
 		//trying to operate pneumatics 2/2/18
 		
 	    // solenoid.set(DoubleSolenoid.Value.kReverse);
-		
+	
 
 		
     }
