@@ -4,7 +4,7 @@ package org.usfirst.frc.team6418.robot;
 import org.usfirst.frc.team6418.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 
-
+import java.util.*;
 
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.IterativeRobot;
@@ -40,7 +40,12 @@ public class Robot extends IterativeRobot {
 
 	// Channels for the wheels
 	
-	final DigitalInput limitSwitch1 = new DigitalInput(0);
+	final DigitalInput intakeLeftLimit = new DigitalInput(0);
+	final DigitalInput intakeRightLimit = new DigitalInput(1);
+	final DigitalInput elevatorGroundLimit =new DigitalInput(2);
+	final DigitalInput elevatorSwitchLimit = new DigitalInput(3);
+	final DigitalInput elevatorScaleLimit = new DigitalInput(4);
+	final DigitalInput elevatorMaxLimit = new DigitalInput(5);
 		
 	final WPITalon kFrontLeftChannel = new WPITalon (2);
 	final WPITalon kRearLeftChannel = new WPITalon (3);
@@ -78,21 +83,20 @@ public class Robot extends IterativeRobot {
 	
 	public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
 
-	
-	
-	public Button trigger = new JoystickButton(rightStick,1);
-	public Button xBoxA = new JoystickButton(xBox,1);
-	public Button xBoxB = new JoystickButton(xBox,2);
-	public Button xBoxX = new JoystickButton(xBox,3);
-	public Button xBoxY = new JoystickButton(xBox,4);
-	public Button xBoxLeftBumper = new JoystickButton(xBox,5);
-	public Button xBoxRightBumper = new JoystickButton(xBox,6);
-	public Button xBoxStart = new JoystickButton(xBox,8);
-	
-	
+	public int xBoxA = 1;
+	public int xBoxB = 2;
+	public int xBoxX = 3;
+	public int xBoxY = 4;
+	public int xBoxLeftBumper = 5;
+	public int xBoxRightBumper = 6;
+	public int xBoxBack = 7;
+	public int xBoxStart = 8;
+
 	Command autonomousCommand;
 	SendableChooser<Command> chooser = new SendableChooser<>();
 
+	public int elevatorZone = 1;
+	
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -201,6 +205,11 @@ public class Robot extends IterativeRobot {
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
+		boolean groundLimitPressed = !elevatorGroundLimit.get();
+		boolean switchLimitPressed = !elevatorSwitchLimit.get();
+		boolean scaleLimitPressed = !elevatorScaleLimit.get();
+		boolean maxLimitPressed = !elevatorMaxLimit.get();
+		
 		double xBoxLeftTrigger = xBox.getRawAxis(2);
 		double xBoxRightTrigger = xBox.getRawAxis(3);
 		double xBoxLeftJoystickY = xBox.getRawAxis(1);
@@ -211,9 +220,7 @@ public class Robot extends IterativeRobot {
 		double rightJoystickX = rightStick.getX();
 		double rightJoystickY = rightStick.getY();
 		 //gonna have to put boolean to make sure climber code doesn't run unless at right height
-		
-		
-		
+				
 		if (Math.abs(xBoxLeftJoystickY) > 0.1){
 			climber1.set(xBoxLeftJoystickY);
 			climber2.set(xBoxLeftJoystickY);
@@ -222,16 +229,17 @@ public class Robot extends IterativeRobot {
 		
 		
 		if (Math.abs(xBoxRightJoystickY) > 0.1){
-			elevatorMotor.set(xBoxRightJoystickY);
+				if (xBoxRightJoystickY < 0 && elevatorGroundLimit.get())
+				elevatorMotor.set(xBoxRightJoystickY);
+			else if (xBoxRightJoystickY > 0 && elevatorMaxLimit.get());
+				elevatorMotor.set(xBoxRightJoystickY);
 			//elevator manual climbing
 		}
+		//pressed  = false
+		//not pressed = true	
 		
-
-		
-		//CLIMBER the climber Solenoid, turn on when START button pressed
-		
-		
-		
+		elevatorZone = checkZone(groundLimitPressed, switchLimitPressed, scaleLimitPressed, maxLimitPressed, elevatorZone, xBoxRightJoystickY);
+	
 		if(xBoxRightTrigger > 0){
 			intakeRight.set(0.8);
 			intakeLeft.set(0.8);
@@ -268,18 +276,17 @@ public class Robot extends IterativeRobot {
 			//robotDrive2.tankDrive(leftStick.getY(), rightStick.getY());
 		}*/
 		//makes pneumatics shoot out if right trigger is pressed and shoot back in when released
-		if(xBox.getRawButton(6)){
+		if(xBox.getRawButton(xBoxRightBumper)){
 			//button 6 is right bumper
 			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
 		}
-		else if(xBox.getRawButton(5)){
+		else if(xBox.getRawButton(xBoxLeftBumper)){
 			intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
 		else{
 			intakeSolenoid.set(DoubleSolenoid.Value.kOff);
 		}
-				
-		
+			
 	/*	here: if the top limit switch has not been pressed yet
 			you can keep moving up
 		if it is moving downward && the bottom limit switch has not been pressed 
@@ -287,14 +294,15 @@ public class Robot extends IterativeRobot {
 		do all this logic in the elevator subsystem code. ;
 	*/
 		
-		if (xBox.getRawButton(7)) {
+		if (xBox.getRawButton(xBoxBack)) {
 			//7 SHOULD BE THE BACK BUTTON
 			climberSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
-		else if (xBox.getRawButton(8)){
+		else if (xBox.getRawButton(xBoxStart)){
 			//8 should be START button
 			climberSolenoid.set(DoubleSolenoid.Value.kForward);
 		}
+		
 		
 		
 		//we can change it to toggle with the button later.... talk to the drivers. 
@@ -331,4 +339,31 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void testPeriodic() {
 	}
+	
+	public int MAKINGTHISAREDXcheckZone(boolean groundSwitchPressed, boolean switchSwitchPressed, boolean scaleSwitchPressed, 
+			boolean maxSwitchPressed, int currentZone, double elevatorSpeed) {
+		int zone;
+		if (groundSwitchPressed)
+			zone = 1;
+		else if (currentZone == 1 && !groundSwitchPressed && elevatorSpeed > 0)
+			zone = 2;
+		
+		return zone;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }
