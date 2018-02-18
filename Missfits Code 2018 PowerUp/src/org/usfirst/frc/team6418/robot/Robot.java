@@ -1,6 +1,7 @@
 //Robot-Code-2018 from Missfits github Acc
 package org.usfirst.frc.team6418.robot;
 
+import com.kauailabs.navx.frc.AHRS;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
@@ -134,7 +135,9 @@ public class Robot extends IterativeRobot {
 		if (autonomousCommand != null)
 			autonomousCommand.cancel();
 	}
-
+	
+	
+	AHRS ahrs;
 	/**
 	 * This function is called periodically during operator control
 	 */
@@ -147,7 +150,7 @@ public class Robot extends IterativeRobot {
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
-		robotDrive.driveCartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
+		// robotDrive.driveCartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
 		
 		//pretty sure the gyro might be able to align the robot to the field, it will turn based on the field
 		//IF YOU ADD ANOTHER PARAMETER, THE GYRO ANGLE, IT BECOMES FIELD-ORIENTED
@@ -159,6 +162,19 @@ public class Robot extends IterativeRobot {
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(), gyro.getAngle());
 		
 		//we have to pick one or the other for the two lines^^
+		
+		robotDrive.setSafetyEnabled(true);
+	     	while (isOperatorControl() && isEnabled()) {
+	     		if (stick.getRawButton(0)) {
+	     			ahrs.reset();
+	     		} try {
+	     			/* Use the joystick X axis for lateral movement,
+	     			Y axis for forward movement, and Z axis for rotation.
+	     			Use navX-MXP yaw angle to define Field-centric transform */
+	        	  	robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(), ahrs.getAngle());
+	          } catch (RuntimeException ex) {}
+	          Timer.delay(0.005); // wait for a motor update time
+	      }
     }
 	
 	//lets see if i can push changes :)
