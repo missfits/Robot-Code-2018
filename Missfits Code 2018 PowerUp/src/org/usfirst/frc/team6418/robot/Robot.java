@@ -221,24 +221,34 @@ public class Robot extends IterativeRobot {
 		double rightJoystickY = rightStick.getY();
 		 //gonna have to put boolean to make sure climber code doesn't run unless at right height
 				
-		if (Math.abs(xBoxLeftJoystickY) > 0.1){
-			climber1.set(xBoxLeftJoystickY);
-			climber2.set(xBoxLeftJoystickY);
+		if (xBox.getRawButton(xBoxStart)){
+			climber1.set(0.5);
+			climber2.set(0.5);
 			//we don't want to use the joystick for the climber; use the START button to climb once it gets to X climber height
+		} else {
+			climber1.set(0);
+			climber2.set(0);
 		}
 		
 		
-		if (Math.abs(xBoxRightJoystickY) > 0.1){
+		/*if (Math.abs(xBoxRightJoystickY) > 0.1){
 				if (xBoxRightJoystickY < 0 && elevatorGroundLimit.get())
 				elevatorMotor.set(xBoxRightJoystickY);
 			else if (xBoxRightJoystickY > 0 && elevatorMaxLimit.get());
 				elevatorMotor.set(xBoxRightJoystickY);
 			//elevator manual climbing
+		}*/
+		
+		if (Math.abs(xBoxRightJoystickY) > 0.1) {
+			elevatorMotor.set(xBoxRightJoystickY);
+		} else {
+			elevatorMotor.set(0);
 		}
+		
 		//pressed  = false
 		//not pressed = true	
 		
-		elevatorZone = checkZone(groundLimitPressed, switchLimitPressed, scaleLimitPressed, maxLimitPressed, elevatorZone, xBoxRightJoystickY);
+		//elevatorZone = checkZone(groundLimitPressed, switchLimitPressed, scaleLimitPressed, maxLimitPressed, elevatorZone, xBoxRightJoystickY);
 	
 		if(xBoxRightTrigger > 0){
 			intakeRight.set(0.8);
@@ -342,7 +352,7 @@ public class Robot extends IterativeRobot {
 	
 	public int MAKINGTHISAREDXcheckZone(boolean groundSwitchPressed, boolean switchSwitchPressed, boolean scaleSwitchPressed, 
 			boolean maxSwitchPressed, int currentZone, double elevatorSpeed) {
-		int zone;
+		int zone = 0;
 		if (groundSwitchPressed)
 			zone = 1;
 		else if (currentZone == 1 && !groundSwitchPressed && elevatorSpeed > 0)
