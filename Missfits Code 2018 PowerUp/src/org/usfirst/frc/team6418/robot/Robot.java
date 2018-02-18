@@ -249,7 +249,7 @@ public class Robot extends IterativeRobot {
 		//not pressed = true	
 		
 		//elevatorZone = checkZone(groundLimitPressed, switchLimitPressed, scaleLimitPressed, maxLimitPressed, elevatorZone, xBoxRightJoystickY);
-	
+    
 		if(xBoxRightTrigger > 0){
 			intakeRight.set(0.8);
 			intakeLeft.set(0.8);
@@ -357,7 +357,22 @@ public class Robot extends IterativeRobot {
 			zone = 1;
 		else if (currentZone == 1 && !groundSwitchPressed && elevatorSpeed > 0)
 			zone = 2;
-		
+		else if (currentZone == 3 && !switchSwitchPressed && elevatorSpeed < 0)
+			zone = 2;
+		else if (switchSwitchPressed)
+			zone = 3;
+		else if (currentZone == 3 && !switchSwitchPressed && elevatorSpeed > 0)
+			zone = 4;
+		else if (currentZone == 5 && !scaleSwitchPressed && elevatorSpeed < 0)
+			zone = 4;
+		else if (scaleSwitchPressed)
+			zone = 5;
+		else if (currentZone == 5 && !scaleSwitchPressed && elevatorSpeed > 0)
+			zone = 6;
+		else if (currentZone == 7 && !maxSwitchPressed && elevatorSpeed < 0)
+			zone = 6;
+		else if (maxSwitchPressed)
+			zone = 7;
 		return zone;
 	}
 	
