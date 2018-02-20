@@ -35,8 +35,6 @@ import edu.wpi.first.wpilibj.buttons.*;
 public class Robot extends IterativeRobot {
 
 	//these next few lines of code create the mecanum drive interface for our bot 		
-	MecanumDrive robotDrive;
-	DifferentialDrive robotDrive2;
 
 	// Channels for the wheels
 	
@@ -73,7 +71,7 @@ public class Robot extends IterativeRobot {
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
 	public static OI oi;
 
-	// DoubleSolenoid solenoid = new DoubleSolenoid(1, 2);
+	DoubleSolenoid solenoid = new DoubleSolenoid(1, 2);
 	public Compressor c = new Compressor (0);
 	public DoubleSolenoid intakeSolenoid= new DoubleSolenoid(2, 3);
 	public DoubleSolenoid climberSolenoid = new DoubleSolenoid(0,1);
@@ -97,6 +95,7 @@ public class Robot extends IterativeRobot {
 
 	public int elevatorZone = 1;
 	
+	
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -110,14 +109,15 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putData("Auto mode", chooser);
 		
 		// copied from the Mecanum Drive example class; was in a separate class before: public Robot (){
-		robotDrive = new MecanumDrive(kFrontLeftChannel, kRearLeftChannel, kFrontRightChannel, kRearRightChannel);
 	
 		kFrontLeftChannel.setInverted(true);
 		kRearLeftChannel.setInverted(true);
 		// invert the left side motors
 		// may need to change or remove to match the robot
 		
-		robotDrive.setExpiration(0.1);
+		
+		//operating compressor
+		c.setClosedLoopControl(true);
 	
 	}
 
@@ -221,10 +221,13 @@ public class Robot extends IterativeRobot {
 		double rightJoystickY = rightStick.getY();
 		 //gonna have to put boolean to make sure climber code doesn't run unless at right height
 				
-		if (Math.abs(xBoxLeftJoystickY) > 0.1){
-			climber1.set(xBoxLeftJoystickY);
-			climber2.set(xBoxLeftJoystickY);
+		if (xBox.getRawButton(xBoxStart)){
+			climber1.set(0.5);
+			climber2.set(0.5);
 			//we don't want to use the joystick for the climber; use the START button to climb once it gets to X climber height
+		} else {
+			climber1.set(0);
+			climber2.set(0);
 		}
 		
 		
@@ -238,7 +241,7 @@ public class Robot extends IterativeRobot {
 		//pressed  = false
 		//not pressed = true	
 		
-		elevatorZone = checkZone(groundLimitPressed, switchLimitPressed, scaleLimitPressed, maxLimitPressed, elevatorZone, xBoxRightJoystickY);
+		//elevatorZone = checkZone(groundLimitPressed, switchLimitPressed, scaleLimitPressed, maxLimitPressed, elevatorZone, xBoxRightJoystickY);
 	
 		if(xBoxRightTrigger > 0){
 			intakeRight.set(0.8);
@@ -270,11 +273,7 @@ public class Robot extends IterativeRobot {
 		}
 		//robotDrive.driveCartesian(rightJoystickY, -rightJoystickX, -rightStick.getZ(), 0);
 		//robotDrive2.tankDrive(leftStick.getY(), rightStick.getY());
-		/*if(Math.abs(rightJoystickX) > 0.1 || Math.abs(leftJoystickX)> 0.1){
-			robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), gyro.getAngle());
-		}else{
-			//robotDrive2.tankDrive(leftStick.getY(), rightStick.getY());
-		}*/
+
 		//makes pneumatics shoot out if right trigger is pressed and shoot back in when released
 		if(xBox.getRawButton(xBoxRightBumper)){
 			//button 6 is right bumper
@@ -340,7 +339,7 @@ public class Robot extends IterativeRobot {
 	public void testPeriodic() {
 	}
 	
-	public int MAKINGTHISAREDXcheckZone(boolean groundSwitchPressed, boolean switchSwitchPressed, boolean scaleSwitchPressed, 
+	/*public int MAKINGTHISAREDXcheckZone(boolean groundSwitchPressed, boolean switchSwitchPressed, boolean scaleSwitchPressed, 
 			boolean maxSwitchPressed, int currentZone, double elevatorSpeed) {
 		int zone;
 		if (groundSwitchPressed)
@@ -349,7 +348,7 @@ public class Robot extends IterativeRobot {
 			zone = 2;
 		
 		return zone;
-	}
+	}*/
 	
 	
 	
