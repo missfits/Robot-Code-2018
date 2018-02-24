@@ -4,12 +4,16 @@ package org.usfirst.frc.team6418.robot;
 import org.usfirst.frc.team6418.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6418.robot.subsystems.ExampleSubsystem;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+
 import java.util.*;
 
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
@@ -35,22 +39,18 @@ import edu.wpi.first.wpilibj.buttons.*;
 public class Robot extends IterativeRobot {
 
 	//these next few lines of code create the mecanum drive interface for our bot 		
-	MecanumDrive robotDrive;
-	DifferentialDrive robotDrive2;
 
 	// Channels for the wheels
 	
-	final DigitalInput intakeLeftLimit = new DigitalInput(0);
-	final DigitalInput intakeRightLimit = new DigitalInput(1);
-	final DigitalInput elevatorGroundLimit =new DigitalInput(2);
-	final DigitalInput elevatorSwitchLimit = new DigitalInput(3);
-	final DigitalInput elevatorScaleLimit = new DigitalInput(4);
-	final DigitalInput elevatorMaxLimit = new DigitalInput(5);
+	final DigitalInput intakeLeftLimit = new DigitalInput(3);
+	final DigitalInput intakeRightLimit = new DigitalInput(2);
+	final DigitalInput elevatorGroundLimit =new DigitalInput(0);
+	final DigitalInput elevatorMaxLimit = new DigitalInput(1);
 		
-	final WPITalon kFrontLeftChannel = new WPITalon (2);
-	final WPITalon kRearLeftChannel = new WPITalon (3);
-	final WPITalon kFrontRightChannel = new WPITalon (1);
-	final WPITalon kRearRightChannel = new WPITalon (4);
+	final TalonSRX kFrontLeftChannel = new TalonSRX (2);
+	final TalonSRX kRearLeftChannel = new TalonSRX (3);
+	final TalonSRX kFrontRightChannel = new TalonSRX (1);
+	final TalonSRX kRearRightChannel = new TalonSRX (4);
 	
 	VictorSP intakeRight = new VictorSP (0);
 	VictorSP intakeLeft = new VictorSP (1);
@@ -73,7 +73,6 @@ public class Robot extends IterativeRobot {
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
 	public static OI oi;
 
-	// DoubleSolenoid solenoid = new DoubleSolenoid(1, 2);
 	public Compressor c = new Compressor (0);
 	public DoubleSolenoid intakeSolenoid= new DoubleSolenoid(2, 3);
 	public DoubleSolenoid climberSolenoid = new DoubleSolenoid(0,1);
@@ -97,6 +96,7 @@ public class Robot extends IterativeRobot {
 
 	public int elevatorZone = 1;
 	
+	
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -110,14 +110,15 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putData("Auto mode", chooser);
 		
 		// copied from the Mecanum Drive example class; was in a separate class before: public Robot (){
-		robotDrive = new MecanumDrive(kFrontLeftChannel, kRearLeftChannel, kFrontRightChannel, kRearRightChannel);
 	
 		kFrontLeftChannel.setInverted(true);
 		kRearLeftChannel.setInverted(true);
 		// invert the left side motors
 		// may need to change or remove to match the robot
 		
-		robotDrive.setExpiration(0.1);
+		
+		//operating compressor
+		c.setClosedLoopControl(true);
 	
 	}
 
@@ -205,10 +206,11 @@ public class Robot extends IterativeRobot {
 		//driver has to have the "sitting on the robot" mindset/mentality - "robot-oriented" driving
 //		robotDrive.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(),0);
 		
-		boolean groundLimitPressed = !elevatorGroundLimit.get();
-		boolean switchLimitPressed = !elevatorSwitchLimit.get();
-		boolean scaleLimitPressed = !elevatorScaleLimit.get();
-		boolean maxLimitPressed = !elevatorMaxLimit.get();
+		boolean elevatorGroundLimitPressed = !elevatorGroundLimit.get();
+		boolean elevatorMaxLimitPressed = !elevatorMaxLimit.get();
+		boolean intakeLeftLimitPressed = intakeLeftLimit.get();
+		boolean intakeRightLimitPressed = !intakeRightLimit.get();
+		//intake left is wired normally open instead of closed
 		
 		double xBoxLeftTrigger = xBox.getRawAxis(2);
 		double xBoxRightTrigger = xBox.getRawAxis(3);
@@ -231,32 +233,39 @@ public class Robot extends IterativeRobot {
 		}
 		
 		
-		/*if (Math.abs(xBoxRightJoystickY) > 0.1){
-				if (xBoxRightJoystickY < 0 && elevatorGroundLimit.get())
+		if (Math.abs(xBoxRightJoystickY) > 0.1){
+			if (xBoxRightJoystickY < 0 && !elevatorGroundLimitPressed) {
 				elevatorMotor.set(xBoxRightJoystickY);
-			else if (xBoxRightJoystickY > 0 && elevatorMaxLimit.get());
+			}
+			else if (xBoxRightJoystickY > 0 && !elevatorMaxLimitPressed) {
 				elevatorMotor.set(xBoxRightJoystickY);
+			}
 			//elevator manual climbing
-		}*/
-		
-		if (Math.abs(xBoxRightJoystickY) > 0.1) {
-			elevatorMotor.set(xBoxRightJoystickY);
-		} else {
+		}
+		else {
 			elevatorMotor.set(0);
 		}
-		
-		//pressed  = false
-		//not pressed = true	
-		
-		//elevatorZone = checkZone(groundLimitPressed, switchLimitPressed, scaleLimitPressed, maxLimitPressed, elevatorZone, xBoxRightJoystickY);
-    
+		/*Limit switches:
+		pressed  = false
+		not pressed = true	
+		because that makes SENSE*/
+
+		//controls intake wheels
 		if(xBoxRightTrigger > 0){
 			intakeRight.set(0.8);
 			intakeLeft.set(0.8);
 		}
 		else if (xBoxLeftTrigger > 0){
-			intakeRight.set(-0.8);
-			intakeLeft.set(-0.8);
+			//if (intakeRightLimitPressed) {
+				intakeRight.set(-0.8);
+			//}else {
+				//intakeRight.set(0);
+			//}
+			//if (!intakeLeftLimitPressed) {
+				intakeLeft.set(-0.8);
+			//}else {
+				//intakeLeft.set(0);
+			//}
 		}
 		else {
 			intakeRight.set(0);
@@ -266,25 +275,39 @@ public class Robot extends IterativeRobot {
 		
 		//double minX = Math.min(Math.abs(leftJoystickX), Math.abs(rightJoystickX));
 		if (Math.abs(rightJoystickX) > 0.2) {
-			kFrontLeftChannel.set(-rightJoystickX);
-			kRearRightChannel.set(-rightJoystickX);
-			kFrontRightChannel.set(rightJoystickX);
-			kRearLeftChannel.set(rightJoystickX);
+			kFrontLeftChannel.set(ControlMode.PercentOutput,-rightJoystickX);
+			kRearRightChannel.set(ControlMode.PercentOutput,-rightJoystickX);
+			kFrontRightChannel.set(ControlMode.PercentOutput,rightJoystickX);
+			kRearLeftChannel.set(ControlMode.PercentOutput,rightJoystickX);
 			//manual strafing
 		} else {
-			kFrontLeftChannel.set(leftJoystickY);
-			kRearLeftChannel.set(leftJoystickY);
-			kFrontRightChannel.set(rightJoystickY);
-			kRearRightChannel.set(rightJoystickY);
+			kFrontLeftChannel.set(ControlMode.PercentOutput,leftJoystickY);
+			kRearLeftChannel.set(ControlMode.PercentOutput,leftJoystickY);
+			kFrontRightChannel.set(ControlMode.PercentOutput,rightJoystickY);
+			kRearRightChannel.set(ControlMode.PercentOutput,rightJoystickY);
 			//manual tank drive
 		}
+		
+		/* get the decoded pulse width encoder position, 4096 units per rotation */
+		int leftPulseWidthPos = kRearLeftChannel.getSensorCollection().getPulseWidthPosition(); 
+		int rightPulseWidthPos = kRearRightChannel.getSensorCollection().getPulseWidthPosition(); 
+		/* get measured velocity in units per 100ms, 4096 units is one rotation */ 
+		int leftPulseWidthVel = kRearLeftChannel.getSensorCollection().getPulseWidthVelocity();
+		int rightPulseWidthVel = kRearRightChannel.getSensorCollection().getPulseWidthVelocity();
+		
+		SmartDashboard.putNumber("Left Encoder Position", leftPulseWidthPos);
+		SmartDashboard.putNumber("Right Encoder Position", rightPulseWidthPos);
+		SmartDashboard.putNumber("Left Encoder Velocity", leftPulseWidthVel);
+		SmartDashboard.putNumber("Right Encoder Velocity", rightPulseWidthVel);
+		//SmartDashboard.putBoolean("Left Intake Limit Switch Pressed", intakeLeftLimitPressed);
+		//SmartDashboard.putBoolean("Right Intake Limit Switch Pressed", intakeRightLimitPressed);
+		SmartDashboard.putBoolean("Elevator Ground Limit Pressed", elevatorGroundLimitPressed);
+		SmartDashboard.putBoolean("Elevator Max Limit Pressed", elevatorMaxLimitPressed);
+		
+		
 		//robotDrive.driveCartesian(rightJoystickY, -rightJoystickX, -rightStick.getZ(), 0);
 		//robotDrive2.tankDrive(leftStick.getY(), rightStick.getY());
-		/*if(Math.abs(rightJoystickX) > 0.1 || Math.abs(leftJoystickX)> 0.1){
-			robotDrive.driveCartesian(rightStick.getX(), rightStick.getY(), leftStick.getX(), gyro.getAngle());
-		}else{
-			//robotDrive2.tankDrive(leftStick.getY(), rightStick.getY());
-		}*/
+
 		//makes pneumatics shoot out if right trigger is pressed and shoot back in when released
 		if(xBox.getRawButton(xBoxRightBumper)){
 			//button 6 is right bumper
@@ -350,31 +373,16 @@ public class Robot extends IterativeRobot {
 	public void testPeriodic() {
 	}
 	
-	public int MAKINGTHISAREDXcheckZone(boolean groundSwitchPressed, boolean switchSwitchPressed, boolean scaleSwitchPressed, 
+	/*public int MAKINGTHISAREDXcheckZone(boolean groundSwitchPressed, boolean switchSwitchPressed, boolean scaleSwitchPressed, 
 			boolean maxSwitchPressed, int currentZone, double elevatorSpeed) {
-		int zone = 0;
+		int zone;
 		if (groundSwitchPressed)
 			zone = 1;
 		else if (currentZone == 1 && !groundSwitchPressed && elevatorSpeed > 0)
 			zone = 2;
-		else if (currentZone == 3 && !switchSwitchPressed && elevatorSpeed < 0)
-			zone = 2;
-		else if (switchSwitchPressed)
-			zone = 3;
-		else if (currentZone == 3 && !switchSwitchPressed && elevatorSpeed > 0)
-			zone = 4;
-		else if (currentZone == 5 && !scaleSwitchPressed && elevatorSpeed < 0)
-			zone = 4;
-		else if (scaleSwitchPressed)
-			zone = 5;
-		else if (currentZone == 5 && !scaleSwitchPressed && elevatorSpeed > 0)
-			zone = 6;
-		else if (currentZone == 7 && !maxSwitchPressed && elevatorSpeed < 0)
-			zone = 6;
-		else if (maxSwitchPressed)
-			zone = 7;
+		
 		return zone;
-	}
+	}*/
 	
 	
 	
