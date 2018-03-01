@@ -46,8 +46,11 @@ public class Robot extends IterativeRobot {
 	final TalonSRX kFrontRightChannel = new TalonSRX(1);
 	final TalonSRX kRearRightChannel = new TalonSRX(4);
 
-	VictorSP intakeRight = new VictorSP(0);
-	VictorSP intakeLeft = new VictorSP(1);
+	//TODO
+//	VictorSP intakeRight = new VictorSP(0);
+//	VictorSP intakeLeft = new VictorSP(1);
+	Spark intakeRight = new Spark(0);
+	Spark intakeLeft = new Spark(1);
 
 	VictorSP climber1 = new VictorSP(2);
 	VictorSP climber2 = new VictorSP(3);
@@ -110,6 +113,7 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		Scheduler.getInstance().run();
+		
 	}
 
 	@Override
@@ -164,6 +168,8 @@ public class Robot extends IterativeRobot {
 			intakeRight.set(0.8);
 			intakeLeft.set(0.8);
 		} else if (getAxis(XBoxAxes.LEFT_TRIGGER) > 0) {
+			//TODO
+			//intake wouldn't spin in so we commented the limit switch stuff out maybe we should just wire them
 			if (intakeRightLimitPressed) {
 				intakeRight.set(-0.8);
 			} else {
