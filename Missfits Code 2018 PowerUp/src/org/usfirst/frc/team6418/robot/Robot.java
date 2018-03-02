@@ -10,12 +10,15 @@ import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.SerialPort;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+//TODO
+//import com.kauailabs.navx.frc.AHRS;
 
 enum StartingPosition {
 	LEFT, MIDDLE, RIGHT
@@ -31,9 +34,8 @@ enum XBoxAxes {
 
 public class Robot extends IterativeRobot {
 
-	// these next few lines of code create the mecanum drive interface for our bot
-
-	// Channels for the wheels
+	// AHRS ahrs = new AHRS(SerialPort.Port.kMXP); /* Alternatives: SPI.Port.kMXP,
+	// I2C.Port.kMXP or SerialPort.Port.kUSB */
 
 	final DigitalInput intakeLeftLimit = new DigitalInput(3);
 	final DigitalInput intakeRightLimit = new DigitalInput(2);
@@ -45,8 +47,11 @@ public class Robot extends IterativeRobot {
 	final TalonSRX kFrontRightChannel = new TalonSRX(1);
 	final TalonSRX kRearRightChannel = new TalonSRX(4);
 
-	VictorSP intakeRight = new VictorSP(0);
-	VictorSP intakeLeft = new VictorSP(1);
+	// TODO
+	// VictorSP intakeRight = new VictorSP(0);
+	// VictorSP intakeLeft = new VictorSP(1);
+	Spark intakeRight = new Spark(0);
+	Spark intakeLeft = new Spark(1);
 
 	VictorSP climber1 = new VictorSP(2);
 	VictorSP climber2 = new VictorSP(3);
@@ -66,10 +71,10 @@ public class Robot extends IterativeRobot {
 	public DoubleSolenoid intakeSolenoid = new DoubleSolenoid(2, 3);
 	public DoubleSolenoid climberSolenoid = new DoubleSolenoid(0, 1);
 
-	public static Timer myTimer = new Timer();
+	public static Timer autoTimer = new Timer();
 	public static Timer solenoidTimer = new Timer();
 
-	public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
+	// public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
 
 	SendableChooser<StartingPosition> chooser = new SendableChooser<>();
 
@@ -98,6 +103,9 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void disabledPeriodic() {
+		autoTimer.reset();
+		autoTimer.start();
+		
 		Scheduler.getInstance().run();
 	}
 
@@ -109,12 +117,13 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		Scheduler.getInstance().run();
+
 	}
 
 	@Override
 	public void teleopInit() {
 
-		gyro.reset();
+		// gyro.reset();
 
 		climberSolenoid.set(DoubleSolenoid.Value.kForward);
 
@@ -124,8 +133,8 @@ public class Robot extends IterativeRobot {
 	public void teleopPeriodic() {
 		Scheduler.getInstance().run();
 
-		boolean elevatorGroundLimitPressed = !elevatorGroundLimit.get();
-		boolean elevatorMaxLimitPressed = !elevatorMaxLimit.get();
+		boolean elevatorGroundLimitPressed = elevatorGroundLimit.get();
+		boolean elevatorMaxLimitPressed = elevatorMaxLimit.get();
 		boolean intakeLeftLimitPressed = intakeLeftLimit.get();
 		boolean intakeRightLimitPressed = !intakeRightLimit.get();
 		// intake left is wired normally open instead of closed
@@ -133,6 +142,8 @@ public class Robot extends IterativeRobot {
 		double leftJoystickY = leftStick.getY();
 		double rightJoystickX = rightStick.getX();
 		double rightJoystickY = rightStick.getY();
+
+		double elevatorJoystickY = -getAxis(XBoxAxes.RIGHT_Y);
 		// gonna have to put boolean to make sure climber code doesn't run unless at
 		// right height
 
@@ -144,15 +155,16 @@ public class Robot extends IterativeRobot {
 			climber2.set(0);
 		}
 
-		if (Math.abs(getAxis(XBoxAxes.RIGHT_Y)) > 0.1) {
-			if (getAxis(XBoxAxes.RIGHT_Y) < 0 && !elevatorGroundLimitPressed) {
-				elevatorMotor.set(getAxis(XBoxAxes.RIGHT_Y));
-			} else if (getAxis(XBoxAxes.RIGHT_Y) > 0 && !elevatorMaxLimitPressed) {
-				elevatorMotor.set(getAxis(XBoxAxes.RIGHT_Y));
-			}
-			// elevator manual climbing
+		// TODO
+		if (elevatorJoystickY < -0.1 && !elevatorGroundLimitPressed) {
+			elevatorMotor.set(elevatorJoystickY);
+			SmartDashboard.putString("Driving the elevator", "DOWN");
+		} else if (elevatorJoystickY > 0.1 && !elevatorMaxLimitPressed) {
+			elevatorMotor.set(elevatorJoystickY);
+			SmartDashboard.putString("Driving the elevator", "UP");
 		} else {
 			elevatorMotor.set(0);
+			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
 
 		// controls intake wheels
@@ -160,6 +172,9 @@ public class Robot extends IterativeRobot {
 			intakeRight.set(0.8);
 			intakeLeft.set(0.8);
 		} else if (getAxis(XBoxAxes.LEFT_TRIGGER) > 0) {
+			// TODO
+			// intake wouldn't spin in so we commented the limit switch stuff out maybe we
+			// should just wire them
 			if (intakeRightLimitPressed) {
 				intakeRight.set(-0.8);
 			} else {
@@ -206,6 +221,9 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putBoolean("Elevator Ground Limit Pressed", elevatorGroundLimitPressed);
 		SmartDashboard.putBoolean("Elevator Max Limit Pressed", elevatorMaxLimitPressed);
 
+		// TODO
+		// SmartDashboard.putNumber("NavX Angle", ahrs.getYaw());
+
 		if (buttonIsPressed(XBoxButtons.RIGHT_BUMPER)) {
 			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
 		} else if (buttonIsPressed(XBoxButtons.LEFT_BUMPER)) {
@@ -238,6 +256,43 @@ public class Robot extends IterativeRobot {
 
 	public double getAxis(XBoxAxes axis) {
 		return xBox.getRawAxis(axis.ordinal());
+	}
+
+	// TODO
+	public void runIntake(String direction) {
+
+	}
+
+	public void openIntake(double duration, double currentTime) {
+		if (autoTimer.get() >= currentTime+duration) {
+			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
+		}
+	}
+
+	public void closeIntake(double duration, double currentTime) {
+		if (autoTimer.get() >= currentTime+duration) {
+			intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
+		}
+	}
+
+	// TODO
+	public void stopDrive() {
+
+	}
+
+	// TODO
+	public boolean turnToAngle(double angle) {
+
+	}
+
+	// TODO
+	public void moveElevator(int position) {
+
+	}
+
+	// TODO
+	public boolean getSide(String gameData) {
+
 	}
 
 }
