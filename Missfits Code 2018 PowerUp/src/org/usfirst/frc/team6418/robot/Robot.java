@@ -8,8 +8,10 @@ import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.SerialPort;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.Timer;
@@ -73,7 +75,9 @@ public class Robot extends IterativeRobot {
 
 	public static Timer autoTimer = new Timer();
 	public static Timer solenoidTimer = new Timer();
-
+	
+	public int autoState = 0;
+	
 	// public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
 
 	SendableChooser<StartingPosition> chooser = new SendableChooser<>();
@@ -93,6 +97,8 @@ public class Robot extends IterativeRobot {
 
 		// operating compressor
 		compressor.setClosedLoopControl(true);
+		
+		closeIntake();
 
 	}
 
@@ -103,20 +109,85 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void disabledPeriodic() {
-		autoTimer.reset();
-		autoTimer.start();
 		
-		Scheduler.getInstance().run();
+		//Scheduler.getInstance().run();
 	}
 
 	@Override
 	public void autonomousInit() {
-
+		autoState = 0;
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		Scheduler.getInstance().run();
+		//Scheduler.getInstance().run();
+		switch (autoState) { 
+		case 0:
+			autoTimer.reset();
+			autoTimer.start();
+			autoState++;
+			break;
+//TODO			
+		case 1: 
+			if (autoTimer.get() < 2.0) {
+				driveStraightWithTimer(-0.5);
+			}
+			else {
+				stopDrive();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+		case 2:
+			if(autoTimer.get() < 1.5)
+				moveElevator(0.5);
+			else {
+				moveElevator(0);
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+		case 3: 
+			if (autoTimer.get() < 2.0) {
+				driveStraightWithTimer(-0.25);
+			}
+			else {
+				stopDrive();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+		case 4:
+			if(autoTimer.get() < 1.0)
+				runIntake(0.8);
+			else {
+				runIntake(0);
+				openIntake();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+		case 5: 
+			if (autoTimer.get() < 1.0) {
+				driveStraightWithTimer(0.25);
+			}
+			else {
+				stopDrive();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+	
+		default: 
+			stopDrive();
+			runIntake(0);
+			moveElevator(0);
+			break;
+		}
 
 	}
 
@@ -258,41 +329,69 @@ public class Robot extends IterativeRobot {
 		return xBox.getRawAxis(axis.ordinal());
 	}
 
-	// TODO
-	public void runIntake(String direction) {
-
-	}
-
-	public void openIntake(double duration, double currentTime) {
-		if (autoTimer.get() >= currentTime+duration) {
-			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
+	public void driveStraightEncoder(int distance) {
+		double encoderDistance = (distance/18.85)*2046;
+		int pulseWidthPos = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
+		if (pulseWidthPos < encoderDistance) {
+			kFrontLeftChannel.set(ControlMode.PercentOutput, .5);
+			kRearRightChannel.set(ControlMode.PercentOutput, .5);
+			kFrontRightChannel.set(ControlMode.PercentOutput, .5);
+			kRearLeftChannel.set(ControlMode.PercentOutput, .5);
+		}
+		else {
+			stopDrive();
 		}
 	}
-
-	public void closeIntake(double duration, double currentTime) {
-		if (autoTimer.get() >= currentTime+duration) {
-			intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
-		}
+	
+	public void driveStraightWithTimer(double speed) {
+		
+		kFrontLeftChannel.set(ControlMode.PercentOutput, speed);
+		kRearRightChannel.set(ControlMode.PercentOutput, speed);
+		kFrontRightChannel.set(ControlMode.PercentOutput, speed);
+		kRearLeftChannel.set(ControlMode.PercentOutput, speed);
+		
+	}
+	
+	public void runIntake(double speed) {
+		intakeRight.set(speed);
+		intakeLeft.set(speed);
 	}
 
-	// TODO
+	public void openIntake() {
+		intakeSolenoid.set(DoubleSolenoid.Value.kForward);
+	}
+
+	public void closeIntake() {
+		intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
+	}
+
 	public void stopDrive() {
-
+		kFrontLeftChannel.set(ControlMode.PercentOutput, 0.0);
+		kRearRightChannel.set(ControlMode.PercentOutput, 0.0);
+		kFrontRightChannel.set(ControlMode.PercentOutput, 0.0);
+		kRearLeftChannel.set(ControlMode.PercentOutput, 0.0);
+		System.out.println("STOPPED");
+	}
+	
+	public void moveElevator(double speed) {
+		elevatorMotor.set(speed);
+	}
+	
+	//battery voltage compensation:
+	public double getVoltageCompensationMultipler() {
+		return 12.8 / RobotController.getBatteryVoltage();
 	}
 
 	// TODO
-	public boolean turnToAngle(double angle) {
+/*	public boolean turnToAngle(double angle) {
 
 	}
-
-	// TODO
-	public void moveElevator(int position) {
-
-	}
+	
 
 	// TODO
 	public boolean getSide(String gameData) {
 
 	}
+ */
 
 }
