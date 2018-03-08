@@ -39,8 +39,8 @@ public class Robot extends IterativeRobot {
 	// AHRS ahrs = new AHRS(SerialPort.Port.kMXP); /* Alternatives: SPI.Port.kMXP,
 	// I2C.Port.kMXP or SerialPort.Port.kUSB */
 
-	final DigitalInput intakeLeftLimit = new DigitalInput(3);
-	final DigitalInput intakeRightLimit = new DigitalInput(2);
+	final DigitalInput intakeLeftLimit = new DigitalInput(2);
+	final DigitalInput intakeRightLimit = new DigitalInput(3);
 	final DigitalInput elevatorGroundLimit = new DigitalInput(0);
 	final DigitalInput elevatorMaxLimit = new DigitalInput(1);
 
@@ -75,10 +75,12 @@ public class Robot extends IterativeRobot {
 
 	public static Timer autoTimer = new Timer();
 	public static Timer solenoidTimer = new Timer();
-	
+
 	public int autoState = 0;
-	
-	// public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
+
+	public int switchIsLeftState;
+
+	 public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
 
 	SendableChooser<StartingPosition> chooser = new SendableChooser<>();
 
@@ -97,7 +99,7 @@ public class Robot extends IterativeRobot {
 
 		// operating compressor
 		compressor.setClosedLoopControl(true);
-		
+
 		closeIntake();
 
 	}
@@ -109,86 +111,28 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void disabledPeriodic() {
-		
-		//Scheduler.getInstance().run();
+
+		// Scheduler.getInstance().run();
 	}
 
 	@Override
 	public void autonomousInit() {
 		autoState = 0;
+		switchIsLeftState = switchIsLeft();
+		gyro.reset();
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		//Scheduler.getInstance().run();
-		switch (autoState) { 
-		case 0:
-			autoTimer.reset();
-			autoTimer.start();
-			autoState++;
-			break;
-//TODO			
-		case 1: 
-			if (autoTimer.get() < 2.0) {
-				driveStraightWithTimer(-0.5);
-			}
-			else {
-				stopDrive();
-				autoTimer.reset();
-				autoTimer.start();
-				autoState++;
-			}
-			break;
-		case 2:
-			if(autoTimer.get() < 1.5)
-				moveElevator(0.5);
-			else {
-				moveElevator(0);
-				autoTimer.reset();
-				autoTimer.start();
-				autoState++;
-			}
-			break;
-		case 3: 
-			if (autoTimer.get() < 2.0) {
-				driveStraightWithTimer(-0.25);
-			}
-			else {
-				stopDrive();
-				autoTimer.reset();
-				autoTimer.start();
-				autoState++;
-			}
-			break;
-		case 4:
-			if(autoTimer.get() < 1.0)
-				runIntake(0.8);
-			else {
-				runIntake(0);
-				openIntake();
-				autoTimer.reset();
-				autoTimer.start();
-				autoState++;
-			}
-		case 5: 
-			if (autoTimer.get() < 1.0) {
-				driveStraightWithTimer(0.25);
-			}
-			else {
-				stopDrive();
-				autoTimer.reset();
-				autoTimer.start();
-				autoState++;
-			}
-			break;
-	
-		default: 
-			stopDrive();
-			runIntake(0);
-			moveElevator(0);
-			break;
+		// Scheduler.getInstance().run();
+		if ((switchIsLeftState == 1 && chooser.getSelected() == StartingPosition.LEFT)
+				|| (switchIsLeftState == 0 && chooser.getSelected() == StartingPosition.RIGHT)) {
+			driveStraightSwitch();
+		} else {
+			driveStraightAuto();
 		}
-
+		SmartDashboard.putNumber("Auto State:", autoState);
+		smartDashboardEncoders();
 	}
 
 	@Override
@@ -207,7 +151,7 @@ public class Robot extends IterativeRobot {
 		boolean elevatorGroundLimitPressed = elevatorGroundLimit.get();
 		boolean elevatorMaxLimitPressed = elevatorMaxLimit.get();
 		boolean intakeLeftLimitPressed = intakeLeftLimit.get();
-		boolean intakeRightLimitPressed = !intakeRightLimit.get();
+		boolean intakeRightLimitPressed = intakeRightLimit.get();
 		// intake left is wired normally open instead of closed
 
 		double leftJoystickY = leftStick.getY();
@@ -238,15 +182,10 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
 
-		// controls intake wheels
-		if (getAxis(XBoxAxes.RIGHT_TRIGGER) > 0) {
-			intakeRight.set(0.8);
-			intakeLeft.set(0.8);
-		} else if (getAxis(XBoxAxes.LEFT_TRIGGER) > 0) {
-			// TODO
-			// intake wouldn't spin in so we commented the limit switch stuff out maybe we
-			// should just wire them
-			if (intakeRightLimitPressed) {
+		// -----controls intake wheels-----
+		// in
+		if (getAxis(XBoxAxes.LEFT_TRIGGER) > 0) {
+			if (!intakeRightLimitPressed) {
 				intakeRight.set(-0.8);
 			} else {
 				intakeRight.set(0);
@@ -256,9 +195,17 @@ public class Robot extends IterativeRobot {
 			} else {
 				intakeLeft.set(0);
 			}
-		} else {
-			intakeRight.set(0);
+		} else if (getAxis(XBoxAxes.RIGHT_TRIGGER) <= 0) {
 			intakeLeft.set(0);
+			intakeRight.set(0);
+		}
+		// out
+		if (getAxis(XBoxAxes.RIGHT_TRIGGER) > 0) {
+			intakeLeft.set(0.8);
+			intakeRight.set(0.8);
+		} else if (getAxis(XBoxAxes.LEFT_TRIGGER) <= 0) {
+			intakeLeft.set(0);
+			intakeRight.set(0);
 		}
 
 		// double minX = Math.min(Math.abs(leftJoystickX), Math.abs(rightJoystickX));
@@ -276,23 +223,14 @@ public class Robot extends IterativeRobot {
 			// manual tank drive
 		}
 
-		/* get the decoded pulse width encoder position, 4096 units per rotation */
-		int leftPulseWidthPos = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
-		int rightPulseWidthPos = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
-		/* get measured velocity in units per 100ms, 4096 units is one rotation */
-		int leftPulseWidthVel = kRearLeftChannel.getSensorCollection().getPulseWidthVelocity();
-		int rightPulseWidthVel = kRearRightChannel.getSensorCollection().getPulseWidthVelocity();
+		
 
-		SmartDashboard.putNumber("Left Encoder Position", leftPulseWidthPos);
-		SmartDashboard.putNumber("Right Encoder Position", rightPulseWidthPos);
-		SmartDashboard.putNumber("Left Encoder Velocity", leftPulseWidthVel);
-		SmartDashboard.putNumber("Right Encoder Velocity", rightPulseWidthVel);
+		// TODO
 		SmartDashboard.putBoolean("Left Intake Limit Switch Pressed", intakeLeftLimitPressed);
 		SmartDashboard.putBoolean("Right Intake Limit Switch Pressed", intakeRightLimitPressed);
 		SmartDashboard.putBoolean("Elevator Ground Limit Pressed", elevatorGroundLimitPressed);
 		SmartDashboard.putBoolean("Elevator Max Limit Pressed", elevatorMaxLimitPressed);
-
-		// TODO
+		smartDashboardEncoders();
 		// SmartDashboard.putNumber("NavX Angle", ahrs.getYaw());
 
 		if (buttonIsPressed(XBoxButtons.RIGHT_BUMPER)) {
@@ -330,28 +268,27 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void driveStraightEncoder(int distance) {
-		double encoderDistance = (distance/18.85)*2046;
+		double encoderDistance = (distance / 18.85) * 4096;
 		int pulseWidthPos = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
 		if (pulseWidthPos < encoderDistance) {
 			kFrontLeftChannel.set(ControlMode.PercentOutput, .5);
 			kRearRightChannel.set(ControlMode.PercentOutput, .5);
 			kFrontRightChannel.set(ControlMode.PercentOutput, .5);
 			kRearLeftChannel.set(ControlMode.PercentOutput, .5);
-		}
-		else {
+		} else {
 			stopDrive();
 		}
 	}
-	
-	public void driveStraightWithTimer(double speed) {
-		
+
+	public void driveStraight(double speed) {
+
 		kFrontLeftChannel.set(ControlMode.PercentOutput, speed);
 		kRearRightChannel.set(ControlMode.PercentOutput, speed);
 		kFrontRightChannel.set(ControlMode.PercentOutput, speed);
 		kRearLeftChannel.set(ControlMode.PercentOutput, speed);
-		
+
 	}
-	
+
 	public void runIntake(double speed) {
 		intakeRight.set(speed);
 		intakeLeft.set(speed);
@@ -370,28 +307,171 @@ public class Robot extends IterativeRobot {
 		kRearRightChannel.set(ControlMode.PercentOutput, 0.0);
 		kFrontRightChannel.set(ControlMode.PercentOutput, 0.0);
 		kRearLeftChannel.set(ControlMode.PercentOutput, 0.0);
-		System.out.println("STOPPED");
 	}
-	
+
 	public void moveElevator(double speed) {
 		elevatorMotor.set(speed);
 	}
-	
-	//battery voltage compensation:
+
+	// battery voltage compensation:
 	public double getVoltageCompensationMultipler() {
 		return 12.8 / RobotController.getBatteryVoltage();
 	}
 
-	// TODO
-/*	public boolean turnToAngle(double angle) {
+	public int switchIsLeft() {
+		String gameData;
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		if (gameData.length() > 0) {
+			if (gameData.charAt(0) == 'L') {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+		return -1;
+	}
+
+	public void driveStraightSwitch() {
+		switch (autoState) {
+		case 0:
+			autoTimer.reset();
+			autoTimer.start();
+			autoState++;
+			break;
+		// TODO
+		case 1:
+			if (autoTimer.get() < 2.0) {
+				driveStraight(-0.5);
+			} else {
+				stopDrive();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+		case 2:
+			if (autoTimer.get() < 1.5)
+				moveElevator(0.5);
+			else {
+				moveElevator(0);
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+		case 3:
+			if (autoTimer.get() < 2.0) {
+				driveStraight(-0.25);
+			} else {
+				stopDrive();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+		case 4:
+			if (autoTimer.get() < 1.0)
+				runIntake(0.8);
+			else {
+				runIntake(0);
+				openIntake();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+		case 5:
+			if (autoTimer.get() < 1.0) {
+				driveStraight(0.25);
+			} else {
+				stopDrive();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+
+		default:
+			stopDrive();
+			runIntake(0);
+			moveElevator(0);
+			break;
+		}
+	}
+
+	public void driveStraightAuto() {
+		switch (autoState) {
+		case 0:
+			autoTimer.reset();
+			autoTimer.start();
+			autoState++;
+			break;
+		case 1:
+			if (autoTimer.get() < 1.5) {
+				driveStraight(-0.5);
+			} else {
+				stopDrive();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+			}
+			break;
+		/*case 2:
+			//if(turnToAngle(90)) {
+				stopDrive();
+				gyro.reset();
+				autoTimer.reset();
+				autoTimer.start();
+				autoState++;
+		//	}
+			break;*/
+		default:
+			stopDrive();
+			runIntake(0);
+			moveElevator(0);
+			break;
+		}
 
 	}
+
+	// TODO
 	
+	 public boolean turnToAngle(double angle) {
+		if(Math.abs(gyro.getAngle()) < Math.abs(angle)*0.9) {
+			if (angle < 0) {
+				kFrontLeftChannel.set(ControlMode.PercentOutput, -0.5);
+				kRearLeftChannel.set(ControlMode.PercentOutput,-0.5);
+				kRearRightChannel.set(ControlMode.PercentOutput, 0.5);
+				kFrontRightChannel.set(ControlMode.PercentOutput, 0.5);
+			}
+			else {
+				kFrontLeftChannel.set(ControlMode.PercentOutput, 0.5);
+				kRearLeftChannel.set(ControlMode.PercentOutput,0.5);
+				kRearRightChannel.set(ControlMode.PercentOutput, -0.5);
+				kFrontRightChannel.set(ControlMode.PercentOutput, -0.5);
+			}
+		}else {
+			return true;
+		} 
+		return false;
+	 }
+	 
+	 public void smartDashboardEncoders() {
+		 /* get the decoded pulse width encoder position, 4096 units per rotation */
+			int leftPulseWidthPos = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
+			int rightPulseWidthPos = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
+			/* get measured velocity in units per 100ms, 4096 units is one rotation */
+			int leftPulseWidthVel = kRearLeftChannel.getSensorCollection().getPulseWidthVelocity();
+			int rightPulseWidthVel = kRearRightChannel.getSensorCollection().getPulseWidthVelocity();
 
-	// TODO
-	public boolean getSide(String gameData) {
+			SmartDashboard.putNumber("Left Encoder Position", leftPulseWidthPos);
+			SmartDashboard.putNumber("Right Encoder Position", rightPulseWidthPos);
+			SmartDashboard.putNumber("Left Encoder Velocity", leftPulseWidthVel);
+			SmartDashboard.putNumber("Right Encoder Velocity", rightPulseWidthVel);
 
-	}
- */
+			SmartDashboard.putNumber("Gyro Angle:", gyro.getAngle());
+	 }
+	 
+
 
 }
