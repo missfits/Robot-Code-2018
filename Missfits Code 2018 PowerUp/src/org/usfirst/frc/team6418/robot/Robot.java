@@ -82,20 +82,25 @@ public class Robot extends IterativeRobot {
 
 	 public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
 
-	SendableChooser<StartingPosition> chooser = new SendableChooser<>();
+	SendableChooser<StartingPosition> startPosition = new SendableChooser<>();
+	SendableChooser<Boolean> usingEncoders = new SendableChooser<>();
 
 	public int elevatorZone = 1;
 
 	@Override
 	public void robotInit() {
-		chooser.addDefault("Left", StartingPosition.LEFT);
-		chooser.addObject("Middle", StartingPosition.MIDDLE);
-		chooser.addObject("Right", StartingPosition.RIGHT);
-		SmartDashboard.putData("Starting Position", chooser);
-
+		startPosition.addDefault("Left", StartingPosition.LEFT);
+		startPosition.addObject("Middle", StartingPosition.MIDDLE);
+		startPosition.addObject("Right", StartingPosition.RIGHT);
+		SmartDashboard.putData("Starting Position", startPosition);
+		
+		usingEncoders.addDefault("Encoders", true);
+		usingEncoders.addObject("Timer", false);
+		SmartDashboard.putData("Using Encoders", usingEncoders);
+		
 		kFrontLeftChannel.setInverted(true);
 		kRearLeftChannel.setInverted(true);
-		// may need to change or remove to match the robot
+		//TODO may need to change or remove to match the robot
 
 		// operating compressor
 		compressor.setClosedLoopControl(true);
@@ -125,8 +130,8 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		// Scheduler.getInstance().run();
-		if ((switchIsLeftState == 1 && chooser.getSelected() == StartingPosition.LEFT)
-				|| (switchIsLeftState == 0 && chooser.getSelected() == StartingPosition.RIGHT)) {
+		if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
+				|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
 			driveStraightSwitch();
 		} else {
 			driveStraightAuto();
@@ -310,7 +315,12 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void moveElevator(double speed) {
-		elevatorMotor.set(speed);
+		//moving up is positive
+		if (speed > 0 && !elevatorMaxLimit.get())
+			elevatorMotor.set(speed);
+		else if (speed < 0 && !elevatorGroundLimit.get())
+			elevatorMotor.set(speed);
+		elevatorMotor.set(0);
 	}
 
 	// battery voltage compensation:
@@ -332,20 +342,18 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void driveStraightSwitch() {
+		int pastState = autoState;
 		switch (autoState) {
 		case 0:
 			autoTimer.reset();
 			autoTimer.start();
 			autoState++;
 			break;
-		// TODO
 		case 1:
-			if (autoTimer.get() < 2.0) {
+			if (checkIfDone(120,2.0)) {
+				//robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.5);
 			} else {
-				stopDrive();
-				autoTimer.reset();
-				autoTimer.start();
 				autoState++;
 			}
 			break;
@@ -353,19 +361,13 @@ public class Robot extends IterativeRobot {
 			if (autoTimer.get() < 1.5)
 				moveElevator(0.5);
 			else {
-				moveElevator(0);
-				autoTimer.reset();
-				autoTimer.start();
 				autoState++;
 			}
 			break;
 		case 3:
-			if (autoTimer.get() < 2.0) {
+			if (checkIfDone(3,2.0)) {  
 				driveStraight(-0.25);
 			} else {
-				stopDrive();
-				autoTimer.reset();
-				autoTimer.start();
 				autoState++;
 			}
 			break;
@@ -373,20 +375,14 @@ public class Robot extends IterativeRobot {
 			if (autoTimer.get() < 1.0)
 				runIntake(0.8);
 			else {
-				runIntake(0);
 				openIntake();
-				autoTimer.reset();
-				autoTimer.start();
 				autoState++;
 			}
 			break;
 		case 5:
-			if (autoTimer.get() < 1.0) {
+			if (checkIfDone(20, 1.0)) {
 				driveStraight(0.25);
 			} else {
-				stopDrive();
-				autoTimer.reset();
-				autoTimer.start();
 				autoState++;
 			}
 			break;
@@ -396,6 +392,13 @@ public class Robot extends IterativeRobot {
 			runIntake(0);
 			moveElevator(0);
 			break;
+		}
+		if (pastState != autoState) {
+			stopDrive();
+			moveElevator(0);
+			runIntake(0);
+			autoTimer.reset();
+			autoTimer.start();
 		}
 	}
 
@@ -407,7 +410,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (autoTimer.get() < 1.5) {
+			if (checkIfDone(100, 1.5)) {
 				driveStraight(-0.5);
 			} else {
 				stopDrive();
@@ -433,8 +436,6 @@ public class Robot extends IterativeRobot {
 		}
 
 	}
-
-	// TODO
 	
 	 public boolean turnToAngle(double angle) {
 		if(Math.abs(gyro.getAngle()) < Math.abs(angle)*0.9) {
@@ -470,6 +471,16 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putNumber("Right Encoder Velocity", rightPulseWidthVel);
 
 			SmartDashboard.putNumber("Gyro Angle:", gyro.getAngle());
+	 }
+	 
+	 public boolean checkIfDone(double time, double distance) {
+		 if(usingEncoders.getSelected() && kRearLeftChannel.getSensorCollection().getPulseWidthPosition() >=  (distance / 18.85) * 4096) {
+			 return true;
+		 }
+		 else if(!usingEncoders.getSelected() && autoTimer.get() >= time) {
+			 return true;
+		 }
+		 return false;
 	 }
 	 
 
