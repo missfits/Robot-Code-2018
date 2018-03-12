@@ -27,7 +27,7 @@ enum StartingPosition {
 }
 
 enum AutoStrategy {
-	STRAIGHT, SWITCH, SCALE
+	STRAIGHT, SWITCH, SCALE, NOTHING
 }
 
 enum XBoxButtons {
@@ -84,6 +84,8 @@ public class Robot extends IterativeRobot {
 	public int scaleIsLeftState;
 
 	public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
+	
+	public boolean climberDeployed = false;
 
 	SendableChooser<StartingPosition> startPosition = new SendableChooser<>();
 	SendableChooser<Boolean> usingEncoders = new SendableChooser<>();
@@ -105,7 +107,10 @@ public class Robot extends IterativeRobot {
 		usingEncoders.addObject("Timer", false);
 		SmartDashboard.putData("Using Encoders", usingEncoders);
 		
-		autoStrategy.addDefault("Scale", AutoStrategy.SCALE);
+		autoStrategy.addDefault("Switch", AutoStrategy.SWITCH);
+		autoStrategy.addObject("Scale", AutoStrategy.SCALE);
+		autoStrategy.addObject("Only Straight", AutoStrategy.STRAIGHT);
+		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
 
 		kFrontLeftChannel.setInverted(true);
@@ -157,7 +162,21 @@ public class Robot extends IterativeRobot {
 			smartDashboardEncoders();
 		}
 		else if (autoStrategy.getSelected() == AutoStrategy.SCALE) {
-			autoScale();
+			if ((scaleIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT) 
+					|| (scaleIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
+				autoScale();
+			} else if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
+					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
+				driveStraightSwitch();
+			}else if (startPosition.getSelected() == StartingPosition.MIDDLE) {
+				middleAuto();
+			} else {
+				driveStraightOnly();
+			}
+		} else if (autoStrategy.getSelected() == AutoStrategy.STRAIGHT){
+			driveStraightOnly();
+		}else {
+			stopDrive();
 		}
 	}
 
@@ -167,6 +186,7 @@ public class Robot extends IterativeRobot {
 		// gyro.reset();
 
 		climberSolenoid.set(DoubleSolenoid.Value.kForward);
+		climberDeployed = false;
 
 	}
 
@@ -190,9 +210,9 @@ public class Robot extends IterativeRobot {
 		// right height
 		
 
-		if (Math.abs(climberJoystickY) >= 0.2) {
-			climber1.set(climberJoystickY);
-			climber2.set(climberJoystickY);
+		if (Math.abs(climberJoystickY) >= 0.2 && climberDeployed) {
+			climber1.set(Math.abs(climberJoystickY));
+			climber2.set(Math.abs(climberJoystickY));
 		} else {
 			climber1.set(0);
 			climber2.set(0);
@@ -224,7 +244,7 @@ public class Robot extends IterativeRobot {
 		}
 
 		// double minX = Math.min(Math.abs(leftJoystickX), Math.abs(rightJoystickX));
-		if (Math.abs(rightJoystickX) > 0.2) {
+		if (Math.abs(rightJoystickX) > 0.25) {
 			kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX);
 			kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX);
 			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX);
@@ -262,6 +282,7 @@ public class Robot extends IterativeRobot {
 		if (buttonIsPressed(XBoxButtons.BACK)) {
 			climberSolenoid.set(DoubleSolenoid.Value.kReverse);
 		} else if (buttonIsPressed(XBoxButtons.START)) {
+			climberDeployed = true;
 			climberSolenoid.set(DoubleSolenoid.Value.kForward);
 		}
 	}
@@ -278,13 +299,108 @@ public class Robot extends IterativeRobot {
 		return xBox.getRawAxis(axis.ordinal());
 	}
 
-	public void driveStraight(double speed) {
-		speed *= getVoltageCompensationMultipler();
-		kFrontLeftChannel.set(ControlMode.PercentOutput, speed);
-		kRearRightChannel.set(ControlMode.PercentOutput, speed);
-		kFrontRightChannel.set(ControlMode.PercentOutput, speed);
-		kRearLeftChannel.set(ControlMode.PercentOutput, speed);
+	// battery voltage compensation:
+	public double getVoltageCompensationMultipler() {
+		return 12.7 / RobotController.getBatteryVoltage();
+	}
+	
+	public boolean checkIfNotTurnt(double angle) {
+		return (Math.abs(gyro.getAngle()) < Math.abs(angle) * 0.9);
+	}
 
+	public void turnToAngle(double angle) {
+		double speed = 0.3*getVoltageCompensationMultipler();
+		if (angle < 0) {
+			kFrontLeftChannel.set(ControlMode.PercentOutput, speed);
+			kRearLeftChannel.set(ControlMode.PercentOutput, speed);
+			kRearRightChannel.set(ControlMode.PercentOutput, -speed);
+			kFrontRightChannel.set(ControlMode.PercentOutput, -speed);
+		} else {
+			kFrontLeftChannel.set(ControlMode.PercentOutput, -speed);
+			kRearLeftChannel.set(ControlMode.PercentOutput, -speed);
+			kRearRightChannel.set(ControlMode.PercentOutput, speed);
+			kFrontRightChannel.set(ControlMode.PercentOutput, speed);
+		}
+	}
+
+	public void smartDashboardEncoders() {
+		/* get the decoded pulse width encoder position, 4096 units per rotation */
+		int leftPulseWidthPos = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
+		int rightPulseWidthPos = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
+		/* get measured velocity in units per 100ms, 4096 units is one rotation */
+		int leftPulseWidthVel = kRearLeftChannel.getSensorCollection().getPulseWidthVelocity();
+		int rightPulseWidthVel = kRearRightChannel.getSensorCollection().getPulseWidthVelocity();
+
+		SmartDashboard.putNumber("Left Encoder Position", getLeftEncoderValue());
+		SmartDashboard.putNumber("Right Encoder Position", getRightEncoderValue());
+		SmartDashboard.putNumber("Left Encoder Velocity", leftPulseWidthVel);
+		SmartDashboard.putNumber("Right Encoder Velocity", rightPulseWidthVel);
+
+		SmartDashboard.putNumber("Gyro Angle:", gyro.getAngle());
+	}
+
+	public boolean checkIfNotDone(double distance, double time) {
+		if (usingEncoders.getSelected() && Math.abs(getLeftEncoderValue()) >= (distance / 18.85) * 4096) {
+			return false;
+		} else if (!usingEncoders.getSelected() && autoTimer.get() >= time) {
+			return false;
+		}
+		return true;
+	}
+
+	public void stopDrive() {
+		kFrontLeftChannel.set(ControlMode.PercentOutput, 0.0);
+		kRearRightChannel.set(ControlMode.PercentOutput, 0.0);
+		kFrontRightChannel.set(ControlMode.PercentOutput, 0.0);
+		kRearLeftChannel.set(ControlMode.PercentOutput, 0.0);
+	}
+	
+	public double getLeftEncoderValue() {
+		return -(kRearLeftChannel.getSensorCollection().getPulseWidthPosition() - leftEncoderOffset);
+	}
+
+	public double getRightEncoderValue() {
+		return (kRearRightChannel.getSensorCollection().getPulseWidthPosition() - rightEncoderOffset);
+	}
+
+	public int scaleIsLeft() {
+		String gameData;
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		if (gameData.length() > 0) {
+			if (gameData.charAt(1) == 'L') {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+		return -1;
+	}
+
+	public int switchIsLeft() {
+		String gameData;
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		if (gameData.length() > 0) {
+			if (gameData.charAt(0) == 'L') {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+		return -1;
+	}
+	
+	public void driveStraight(double speed) {
+		double leftSpeed = speed *getVoltageCompensationMultipler();
+		double rightSpeed = speed *getVoltageCompensationMultipler();
+		if(gyro.getAngle() < 0) {
+			leftSpeed *= (1 + Math.abs(gyro.getAngle())*0.05);
+		}else if (gyro.getAngle() > 0) {
+			rightSpeed *= (1 + gyro.getAngle()*0.5);
+		}
+		kFrontLeftChannel.set(ControlMode.PercentOutput, leftSpeed);
+		kRearLeftChannel.set(ControlMode.PercentOutput, leftSpeed);
+		kFrontRightChannel.set(ControlMode.PercentOutput, rightSpeed);
+		kRearRightChannel.set(ControlMode.PercentOutput, rightSpeed);
 	}
 
 	public void runIntake(double speed) {
@@ -300,13 +416,6 @@ public class Robot extends IterativeRobot {
 		intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
 	}
 
-	public void stopDrive() {
-		kFrontLeftChannel.set(ControlMode.PercentOutput, 0.0);
-		kRearRightChannel.set(ControlMode.PercentOutput, 0.0);
-		kFrontRightChannel.set(ControlMode.PercentOutput, 0.0);
-		kRearLeftChannel.set(ControlMode.PercentOutput, 0.0);
-	}
-
 	public void moveElevator(double speed) {
 		// moving up is positive
 		if (speed > 0 && !elevatorMaxLimit.get())
@@ -315,12 +424,7 @@ public class Robot extends IterativeRobot {
 			elevatorMotor.set(speed);
 		elevatorMotor.set(0);
 	}
-
-	// battery voltage compensation:
-	public double getVoltageCompensationMultipler() {
-		return 12.7 / RobotController.getBatteryVoltage();
-	}
-
+	
 	public void driveStraightSwitch() {
 		int pastState = autoState;
 		switch (autoState) {
@@ -594,92 +698,5 @@ public class Robot extends IterativeRobot {
 			autoTimer.start();
 		}
 	}
-
-	/*
-	 * public int switchIsLeft() { String gameData; gameData =
-	 * DriverStation.getInstance().getGameSpecificMessage(); if (gameData.length() >
-	 * 0) { if (gameData.charAt(0) == 'L') { return 1; } else { return 0; } } return
-	 * -1; }
-	 */
-
-	public boolean checkIfNotTurnt(double angle) {
-		return (Math.abs(gyro.getAngle()) < Math.abs(angle) * 0.9);
-	}
-
-	public void turnToAngle(double angle) {
-		double speed = 0.3*getVoltageCompensationMultipler();
-		if (angle < 0) {
-			kFrontLeftChannel.set(ControlMode.PercentOutput, speed);
-			kRearLeftChannel.set(ControlMode.PercentOutput, speed);
-			kRearRightChannel.set(ControlMode.PercentOutput, -speed);
-			kFrontRightChannel.set(ControlMode.PercentOutput, -speed);
-		} else {
-			kFrontLeftChannel.set(ControlMode.PercentOutput, -speed);
-			kRearLeftChannel.set(ControlMode.PercentOutput, -speed);
-			kRearRightChannel.set(ControlMode.PercentOutput, speed);
-			kFrontRightChannel.set(ControlMode.PercentOutput, speed);
-		}
-	}
-
-	public void smartDashboardEncoders() {
-		/* get the decoded pulse width encoder position, 4096 units per rotation */
-		int leftPulseWidthPos = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
-		int rightPulseWidthPos = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
-		/* get measured velocity in units per 100ms, 4096 units is one rotation */
-		int leftPulseWidthVel = kRearLeftChannel.getSensorCollection().getPulseWidthVelocity();
-		int rightPulseWidthVel = kRearRightChannel.getSensorCollection().getPulseWidthVelocity();
-
-		SmartDashboard.putNumber("Left Encoder Position", getLeftEncoderValue());
-		SmartDashboard.putNumber("Right Encoder Position", getRightEncoderValue());
-		SmartDashboard.putNumber("Left Encoder Velocity", leftPulseWidthVel);
-		SmartDashboard.putNumber("Right Encoder Velocity", rightPulseWidthVel);
-
-		SmartDashboard.putNumber("Gyro Angle:", gyro.getAngle());
-	}
-
-	public boolean checkIfNotDone(double distance, double time) {
-		if (usingEncoders.getSelected() && Math.abs(getLeftEncoderValue()) >= (distance / 18.85) * 4096) {
-			return false;
-		} else if (!usingEncoders.getSelected() && autoTimer.get() >= time) {
-			return false;
-		}
-		return true;
-	}
-
-	public double getLeftEncoderValue() {
-
-		return -(kRearLeftChannel.getSensorCollection().getPulseWidthPosition() - leftEncoderOffset);
-	}
-
-	public double getRightEncoderValue() {
-
-		return (kRearRightChannel.getSensorCollection().getPulseWidthPosition() - rightEncoderOffset);
-	}
-
-	public int scaleIsLeft() {
-		String gameData;
-		gameData = DriverStation.getInstance().getGameSpecificMessage();
-		if (gameData.length() > 0) {
-			if (gameData.charAt(1) == 'L') {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-		return -1;
-	}
-
-	public int switchIsLeft() {
-		String gameData;
-		gameData = DriverStation.getInstance().getGameSpecificMessage();
-		if (gameData.length() > 0) {
-			if (gameData.charAt(0) == 'L') {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-		return -1;
-	}
-
+	
 }
