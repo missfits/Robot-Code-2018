@@ -26,6 +26,10 @@ enum StartingPosition {
 	LEFT, MIDDLE, RIGHT
 }
 
+enum AutoStrategy {
+	STRAIGHT, SWITCH, SCALE
+}
+
 enum XBoxButtons {
 	DONOTUSE, A, B, X, Y, LEFT_BUMPER, RIGHT_BUMPER, BACK, START
 }
@@ -77,17 +81,18 @@ public class Robot extends IterativeRobot {
 	public int autoState = 0;
 
 	public int switchIsLeftState;
+	public int scaleIsLeftState;
 
 	public static ADXRS450_Gyro gyro = new ADXRS450_Gyro();
 
 	SendableChooser<StartingPosition> startPosition = new SendableChooser<>();
 	SendableChooser<Boolean> usingEncoders = new SendableChooser<>();
+	SendableChooser<AutoStrategy> autoStrategy = new SendableChooser<>();
 
 	public int elevatorZone = 1;
-	
+
 	public double leftEncoderOffset;
 	public double rightEncoderOffset;
-	
 
 	@Override
 	public void robotInit() {
@@ -99,6 +104,9 @@ public class Robot extends IterativeRobot {
 		usingEncoders.addDefault("Encoders", true);
 		usingEncoders.addObject("Timer", false);
 		SmartDashboard.putData("Using Encoders", usingEncoders);
+		
+		autoStrategy.addDefault("Scale", AutoStrategy.SCALE);
+		SmartDashboard.putData("Auto Strategy", autoStrategy);
 
 		kFrontLeftChannel.setInverted(true);
 		kRearLeftChannel.setInverted(true);
@@ -126,6 +134,7 @@ public class Robot extends IterativeRobot {
 	public void autonomousInit() {
 		autoState = 0;
 		switchIsLeftState = switchIsLeft();
+		scaleIsLeftState = scaleIsLeft();
 		leftEncoderOffset = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
 		rightEncoderOffset = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
 		gyro.reset();
@@ -134,16 +143,22 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		// Scheduler.getInstance().run();
-		if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
-				|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
-			driveStraightSwitch();
-		} else if (startPosition.getSelected() == StartingPosition.MIDDLE) {
-			middleAuto();
-		} else {
-			driveStraightOnly();
+		if (autoStrategy.getSelected() == AutoStrategy.SWITCH) {
+
+			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
+					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
+				driveStraightSwitch();
+			} else if (startPosition.getSelected() == StartingPosition.MIDDLE) {
+				middleAuto();
+			} else {
+				driveStraightOnly();
+			}
+			SmartDashboard.putNumber("Auto State:", autoState);
+			smartDashboardEncoders();
 		}
-		SmartDashboard.putNumber("Auto State:", autoState);
-		smartDashboardEncoders();
+		else if (autoStrategy.getSelected() == AutoStrategy.SCALE) {
+			autoScale();
+		}
 	}
 
 	@Override
@@ -168,18 +183,22 @@ public class Robot extends IterativeRobot {
 		double rightJoystickY = rightStick.getY();
 
 		double elevatorJoystickY = -getAxis(XBoxAxes.RIGHT_Y);
+		double climberJoystickY = -getAxis(XBoxAxes.LEFT_Y);
+				//TODO check the negative
+				
 		// gonna have to put boolean to make sure climber code doesn't run unless at
 		// right height
+		
 
-		if (buttonIsPressed(XBoxButtons.START)) {
-			climber1.set(0.5);
-			climber2.set(0.5);
+		if (Math.abs(climberJoystickY) >= 0.2) {
+			climber1.set(climberJoystickY);
+			climber2.set(climberJoystickY);
 		} else {
 			climber1.set(0);
 			climber2.set(0);
 		}
 
-		// TODO
+		// TODO CHECK THE ROBOT LIMIT SWITCHES also wire them unsafely
 		if (elevatorJoystickY < -0.1 && !elevatorGroundLimitPressed) {
 			elevatorMotor.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "DOWN");
@@ -234,10 +253,10 @@ public class Robot extends IterativeRobot {
 		}
 
 		/*
-		 * here: if the top limit switch has not been pressed yet you can keep moving up
+		 * here: if the top limit switch has not been pressed yet, you can keep moving up
 		 * if it is moving downward && the bottom limit switch has not been pressed
-		 * should we have a state variable? do all this logic in the elevator subsystem
-		 * code. ;
+		 * do all this logic in the elevator subsystem
+		 * code. 
 		 */
 
 		if (buttonIsPressed(XBoxButtons.BACK)) {
@@ -259,21 +278,8 @@ public class Robot extends IterativeRobot {
 		return xBox.getRawAxis(axis.ordinal());
 	}
 
-	public void driveStraightEncoder(int distance) {
-		double encoderDistance = (distance / 18.85) * 4096;
-		int pulseWidthPos = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
-		if (pulseWidthPos < encoderDistance) {
-			kFrontLeftChannel.set(ControlMode.PercentOutput, .5);
-			kRearRightChannel.set(ControlMode.PercentOutput, .5);
-			kFrontRightChannel.set(ControlMode.PercentOutput, .5);
-			kRearLeftChannel.set(ControlMode.PercentOutput, .5);
-		} else {
-			stopDrive();
-		}
-	}
-
 	public void driveStraight(double speed) {
-
+		speed *= getVoltageCompensationMultipler();
 		kFrontLeftChannel.set(ControlMode.PercentOutput, speed);
 		kRearRightChannel.set(ControlMode.PercentOutput, speed);
 		kFrontRightChannel.set(ControlMode.PercentOutput, speed);
@@ -312,20 +318,7 @@ public class Robot extends IterativeRobot {
 
 	// battery voltage compensation:
 	public double getVoltageCompensationMultipler() {
-		return 12.8 / RobotController.getBatteryVoltage();
-	}
-
-	public int switchIsLeft() {
-		String gameData;
-		gameData = DriverStation.getInstance().getGameSpecificMessage();
-		if (gameData.length() > 0) {
-			if (gameData.charAt(0) == 'L') {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-		return -1;
+		return 12.7 / RobotController.getBatteryVoltage();
 	}
 
 	public void driveStraightSwitch() {
@@ -337,7 +330,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(120, 2.0)) {
+			if (checkIfNotDone(65, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.5);
 			} else {
@@ -402,8 +395,8 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(100, 1.5)) {
-				driveStraight(-0.5);
+			if (checkIfNotDone(80, 1.5)) {
+				driveStraight(-0.3);
 			} else {
 				stopDrive();
 				autoTimer.reset();
@@ -438,11 +431,11 @@ public class Robot extends IterativeRobot {
 			// is left TODO
 			angle1 = -34.5;
 			angle2 = -angle1;
-			turntDistance = 108.04;
+			turntDistance = 72; //108-36
 		} else if (switchIsLeftState == 0) {
 			angle1 = 32.2;
 			angle2 = -angle1;
-			turntDistance = 105.15;
+			turntDistance = 75; //105-36
 		}
 
 		switch (autoState) {
@@ -452,7 +445,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(12, 2.0)) {
+			if (checkIfNotDone(6, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.5);
 			} else {
@@ -493,7 +486,14 @@ public class Robot extends IterativeRobot {
 				autoState++;
 			}
 			break;
-
+		case 6: 
+			if (checkIfNotDone(6, 2.0)) {
+				// robot is 3'3", 38 in, 99 cm
+				driveStraight(0.5);
+			} else {
+				autoState++;
+			}
+			break;
 		default:
 			stopDrive();
 			runIntake(0);
@@ -513,6 +513,88 @@ public class Robot extends IterativeRobot {
 
 	}
 
+	public void autoScale() {
+		int pastState = autoState;
+		double angle = 0;
+		if (scaleIsLeftState == -1)
+			return;
+		else if (scaleIsLeftState == 1) {
+			angle = 90;
+		} else if (scaleIsLeftState == 0) {
+			angle = -90;
+		}
+
+		switch (autoState) {
+		case 0:
+			autoTimer.reset();
+			autoTimer.start();
+			autoState++;
+			break;
+		case 1:
+			if (checkIfNotDone(280, 2.0)) {
+				// robot is 3'3", 38 in, 99 cm
+				driveStraight(-0.8);
+			} else {
+				autoState++;
+			}
+			break;
+		case 2:
+			if(autoTimer.get() >= 1.0) {
+				autoState++;
+			}
+			break;
+		case 3:
+			if (checkIfNotTurnt(angle))
+				turnToAngle(angle);
+			else {
+				autoState++;
+			}
+			break;
+		case 4:
+			if (checkIfNotDone(6, 0.2)) {
+				driveStraight(-0.25);
+			} else {
+				autoState++;
+			}
+			break;
+		case 5:
+			if (autoTimer.get() < 3.0)
+				moveElevator(0.5);
+			else {
+				openIntake();
+				autoState++;
+			}
+			break;
+		case 6:
+			if (autoTimer.get() < 1.0)
+				runIntake(0.8);
+			else {
+				openIntake();
+				autoState++;
+			}
+			break;
+		case 7:
+			if (autoTimer.get() < 2.5)
+				moveElevator(-0.5);
+			break;
+		default:
+			stopDrive();
+			runIntake(0);
+			moveElevator(0);
+			break;
+		}
+		if (pastState != autoState) {
+			stopDrive();
+			moveElevator(0);
+			runIntake(0);
+			leftEncoderOffset = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
+			rightEncoderOffset = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
+			gyro.reset();
+			autoTimer.reset();
+			autoTimer.start();
+		}
+	}
+
 	/*
 	 * public int switchIsLeft() { String gameData; gameData =
 	 * DriverStation.getInstance().getGameSpecificMessage(); if (gameData.length() >
@@ -525,7 +607,7 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void turnToAngle(double angle) {
-		double speed = 0.3;
+		double speed = 0.3*getVoltageCompensationMultipler();
 		if (angle < 0) {
 			kFrontLeftChannel.set(ControlMode.PercentOutput, speed);
 			kRearLeftChannel.set(ControlMode.PercentOutput, speed);
@@ -556,8 +638,7 @@ public class Robot extends IterativeRobot {
 	}
 
 	public boolean checkIfNotDone(double distance, double time) {
-		if (usingEncoders.getSelected()
-				&& Math.abs(getLeftEncoderValue()) >= (distance / 18.85) * 4096) {
+		if (usingEncoders.getSelected() && Math.abs(getLeftEncoderValue()) >= (distance / 18.85) * 4096) {
 			return false;
 		} else if (!usingEncoders.getSelected() && autoTimer.get() >= time) {
 			return false;
@@ -566,18 +647,39 @@ public class Robot extends IterativeRobot {
 	}
 
 	public double getLeftEncoderValue() {
-		
+
 		return -(kRearLeftChannel.getSensorCollection().getPulseWidthPosition() - leftEncoderOffset);
 	}
-	
+
 	public double getRightEncoderValue() {
-		
+
 		return (kRearRightChannel.getSensorCollection().getPulseWidthPosition() - rightEncoderOffset);
 	}
-	
-	
-	
-	
-	
-	
+
+	public int scaleIsLeft() {
+		String gameData;
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		if (gameData.length() > 0) {
+			if (gameData.charAt(1) == 'L') {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+		return -1;
+	}
+
+	public int switchIsLeft() {
+		String gameData;
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		if (gameData.length() > 0) {
+			if (gameData.charAt(0) == 'L') {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+		return -1;
+	}
+
 }
