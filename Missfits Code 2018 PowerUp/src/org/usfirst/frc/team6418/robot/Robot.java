@@ -164,10 +164,10 @@ public class Robot extends IterativeRobot {
 		else if (autoStrategy.getSelected() == AutoStrategy.SCALE) {
 			if ((scaleIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT) 
 					|| (scaleIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
-				autoScale();
+				autoScale(true);
 			} else if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
 					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
-				driveStraightSwitch();
+				autoScale(false);
 			}else if (startPosition.getSelected() == StartingPosition.MIDDLE) {
 				middleAuto();
 			} else {
@@ -617,7 +617,7 @@ public class Robot extends IterativeRobot {
 
 	}
 
-	public void autoScale() {
+	public void autoScale(boolean goingToScale) {
 		int pastState = autoState;
 		double angle = 0;
 		if (scaleIsLeftState == -1)
@@ -627,6 +627,15 @@ public class Robot extends IterativeRobot {
 		} else if (scaleIsLeftState == 0) {
 			angle = -90;
 		}
+		SmartDashboard.putBoolean("Going to scale", goingToScale);
+		//not going to scale means that we are going to the switch, which must be owned on the opposite side as the scale (otherwise we would've just gone to the scale)
+		if(!goingToScale) {
+			angle *= -1;
+		}
+		
+		double gamepieceDistance = goingToScale ? 280 : 95;
+		double plateDistance = goingToScale ? 6 : 20.4;
+		double elevatorLiftTime = goingToScale ? 3.0 : 1.0;
 
 		switch (autoState) {
 		case 0:
@@ -635,7 +644,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(280, 2.0)) {
+			if (checkIfNotDone(gamepieceDistance, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.8);
 			} else {
@@ -655,14 +664,14 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 4:
-			if (checkIfNotDone(6, 0.2)) {
+			if (checkIfNotDone(plateDistance, 0.2)) {
 				driveStraight(-0.25);
 			} else {
 				autoState++;
 			}
 			break;
 		case 5:
-			if (autoTimer.get() < 3.0)
+			if (autoTimer.get() < elevatorLiftTime)
 				moveElevator(0.5);
 			else {
 				openIntake();
@@ -678,7 +687,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 7:
-			if (autoTimer.get() < 2.5)
+			if (autoTimer.get() < elevatorLiftTime - 0.5)
 				moveElevator(-0.5);
 			break;
 		default:
