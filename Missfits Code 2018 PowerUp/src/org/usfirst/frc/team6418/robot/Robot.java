@@ -74,8 +74,8 @@ public class Robot extends IterativeRobot {
 	public DoubleSolenoid intakeSolenoid = new DoubleSolenoid(2, 3);
 	public DoubleSolenoid climberSolenoid = new DoubleSolenoid(0, 1);
 
-	public static Timer autoTimer = new Timer();
-	public static Timer solenoidTimer = new Timer();
+	public Timer autoTimer = new Timer();
+	public Timer solenoidTimer = new Timer();
 
 	public int autoState = 0;
 
@@ -394,17 +394,22 @@ public class Robot extends IterativeRobot {
 	}
 	
 	public void driveStraight(double speed) {
-		double leftSpeed = speed *getVoltageCompensationMultipler();
-		double rightSpeed = speed *getVoltageCompensationMultipler();
-		if(gyro.getAngle() < 0) {
-			leftSpeed *= (1 + Math.abs(gyro.getAngle())*0.05);
-		}else if (gyro.getAngle() > 0) {
-			rightSpeed *= (1 + gyro.getAngle()*0.5);
-		}
-		kFrontLeftChannel.set(ControlMode.PercentOutput, leftSpeed);
-		kRearLeftChannel.set(ControlMode.PercentOutput, leftSpeed);
-		kFrontRightChannel.set(ControlMode.PercentOutput, rightSpeed);
-		kRearRightChannel.set(ControlMode.PercentOutput, rightSpeed);
+		//SFR getting rid of drift compensation
+//		double leftSpeed = speed *getVoltageCompensationMultipler();
+//		double rightSpeed = speed *getVoltageCompensationMultipler();
+//		if(gyro.getAngle() < 0) {
+//			leftSpeed *= (1 + Math.abs(gyro.getAngle())*0.05);
+//		}else if (gyro.getAngle() > 0) {
+//			rightSpeed *= (1 + gyro.getAngle()*0.5);
+//		}
+//		kFrontLeftChannel.set(ControlMode.PercentOutput, leftSpeed);
+//		kRearLeftChannel.set(ControlMode.PercentOutput, leftSpeed);
+//		kFrontRightChannel.set(ControlMode.PercentOutput, rightSpeed);
+//		kRearRightChannel.set(ControlMode.PercentOutput, rightSpeed);
+		kFrontLeftChannel.set(ControlMode.PercentOutput, speed);
+		kRearLeftChannel.set(ControlMode.PercentOutput, speed);
+		kFrontRightChannel.set(ControlMode.PercentOutput, speed);
+		kRearRightChannel.set(ControlMode.PercentOutput, speed);
 	}
 
 	public void runIntake(double speed) {
@@ -506,7 +511,8 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(80, 1.5)) {
+			//increased distance from 80 to 85
+			if (checkIfNotDone(85, 1.5)) {
 				driveStraight(-0.3);
 			} else {
 				stopDrive();
@@ -535,7 +541,7 @@ public class Robot extends IterativeRobot {
 	public void middleAuto() {
 		int pastState = autoState;
 		double angle1 = 0, angle2 = 0;
-		double turntDistance = 0;
+		double turntDistance = 0, distanceAfterTurn2 = 0;
 		if (switchIsLeftState == -1)
 			return;
 		else if (switchIsLeftState == 1) {
@@ -543,10 +549,14 @@ public class Robot extends IterativeRobot {
 			angle1 = -34.5;
 			angle2 = -angle1;
 			turntDistance = 72; //108-36
+			distanceAfterTurn2 = 6;
 		} else if (switchIsLeftState == 0) {
-			angle1 = 32.2;
+		//	angle1 = 32.2;
+			angle1 = 35;
 			angle2 = -angle1;
-			turntDistance = 75; //105-36
+			turntDistance = 70;
+			distanceAfterTurn2 = 13;
+		//	turntDistance = 75; //105-36
 		}
 
 		switch (autoState) {
@@ -601,6 +611,17 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 6:
+			//40/tan((32*pi/180))-40/tan(35*pi/180)+6
+		//	if (checkIfNotDone(6, 2.0)) {
+			if (checkIfNotDone(distanceAfterTurn2, 2.0)) {
+				// robot is 3'3", 38 in, 99 cm
+				driveStraight(-0.5);
+			} else {
+				autoState++;
+			}
+			break;
+		case 7: 
+
 			if (autoTimer.get() < 1.0)
 				runIntake(0.8);
 			else {
@@ -608,7 +629,9 @@ public class Robot extends IterativeRobot {
 				autoState++;
 			}
 			break;
-		case 7: 
+		case 8:
+			//40/tan((32*pi/180))-40/tan(35*pi/180)+6
+		//	if (checkIfNotDone(6, 2.0)) {
 			if (checkIfNotDone(6, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(0.5);
