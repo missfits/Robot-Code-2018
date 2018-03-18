@@ -673,9 +673,7 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void autoScale(boolean goingToScale) {
-		autoState = -1;
-		//TODO SFR
-		//autoScale is untested, we don't want to run it.
+		//UNTESTED do this at svr
 		int pastState = autoState;
 		double angle = 0;
 		if (scaleIsLeftState == -1)
