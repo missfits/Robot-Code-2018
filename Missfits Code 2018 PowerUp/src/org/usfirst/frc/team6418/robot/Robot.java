@@ -216,6 +216,7 @@ public class Robot extends IterativeRobot {
 
 		if (Math.abs(climberJoystickY) >= 0.2 && climberDeployed) {
 			//TODO let the climber move backwards, move DOWN
+			//it's setting it to positive so positive is reeling it in. 
 			climber1.set(Math.abs(climberJoystickY));
 			climber2.set(Math.abs(climberJoystickY));
 		} else {
@@ -234,6 +235,7 @@ public class Robot extends IterativeRobot {
 			elevatorMotor.set(0);
 			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
+		
 
 		// -----controls intake wheels-----
 		// in
@@ -469,7 +471,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 4:
 			if (autoTimer.get() < 1.0)
-				runIntake(0.8);
+				runIntake(0.5);
 			else {
 				openIntake();
 				autoState++;
@@ -546,14 +548,16 @@ public class Robot extends IterativeRobot {
 			return;
 		else if (switchIsLeftState == 1) {
 			// is left TODO
+			//angle2 = -angle1;
 			angle1 = -34.5;
-			angle2 = -angle1;
+			angle2 = 36;
 			turntDistance = 72; //108-36
 			distanceAfterTurn2 = 6;
 		} else if (switchIsLeftState == 0) {
 		//	angle1 = 32.2;
+			//angle2 = -angle1;
 			angle1 = 35;
-			angle2 = -angle1;
+			angle2 = -37;
 			turntDistance = 70;
 			distanceAfterTurn2 = 13;
 		//	turntDistance = 75; //105-36
@@ -623,7 +627,7 @@ public class Robot extends IterativeRobot {
 		case 7: 
 
 			if (autoTimer.get() < 1.0)
-				runIntake(0.8);
+				runIntake(0.5);
 			else {
 				openIntake();
 				autoState++;
@@ -732,7 +736,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 7:
 			if (autoTimer.get() < 1.0)
-				runIntake(0.8);
+				runIntake(0.5);
 			else {
 				openIntake();
 				autoState++;
