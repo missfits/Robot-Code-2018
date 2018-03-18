@@ -27,7 +27,7 @@ enum StartingPosition {
 }
 
 enum AutoStrategy {
-	STRAIGHT, SWITCH, SCALE, NOTHING
+	STRAIGHT, ISWITCH, OSWITCH, SCALE, NOTHING
 }
 
 enum XBoxButtons {
@@ -107,7 +107,8 @@ public class Robot extends IterativeRobot {
 		usingEncoders.addObject("Timer", false);
 		SmartDashboard.putData("Using Encoders", usingEncoders);
 		
-		autoStrategy.addDefault("Switch", AutoStrategy.SWITCH);
+		autoStrategy.addDefault("Switch From Inside", AutoStrategy.ISWITCH);
+		autoStrategy.addObject("Switch From Outside", AutoStrategy.OSWITCH);
 		autoStrategy.addObject("Scale", AutoStrategy.SCALE);
 		autoStrategy.addObject("Only Straight", AutoStrategy.STRAIGHT);
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
@@ -148,7 +149,7 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		// Scheduler.getInstance().run();
-		if (autoStrategy.getSelected() == AutoStrategy.SWITCH) {
+		if (autoStrategy.getSelected() == AutoStrategy.ISWITCH) {
 
 			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
 					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
@@ -175,7 +176,15 @@ public class Robot extends IterativeRobot {
 			} else {
 				driveStraightOnly();
 			}
-		} else if (autoStrategy.getSelected() == AutoStrategy.STRAIGHT){
+		} else if (autoStrategy.getSelected() == AutoStrategy.OSWITCH) {
+			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
+					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
+				autoScale(false);
+			}else {
+				driveStraightOnly();
+			}
+		}
+		else if (autoStrategy.getSelected() == AutoStrategy.STRAIGHT){
 			driveStraightOnly();
 		}else {
 			stopDrive();
@@ -223,6 +232,7 @@ public class Robot extends IterativeRobot {
 			climber1.set(0);
 			climber2.set(0);
 		}
+		//TODO maybe make a slider on the joystick into a give climber rope some slack thing
 
 		//for elevator RED is UP. Now pushing up on XBOX makes elevator drive up
 		if (elevatorJoystickY > 0.1 && !elevatorGroundLimitPressed) {
@@ -676,9 +686,13 @@ public class Robot extends IterativeRobot {
 			angle = -90;
 		}
 		SmartDashboard.putBoolean("Going to scale", goingToScale);
-		//not going to scale means that we are going to the switch, which must be owned on the opposite side as the scale (otherwise we would've just gone to the scale)
+		
 		if(!goingToScale) {
-			angle *= -1;
+			if (switchIsLeftState == 1) {
+				angle = 90;
+			} else if (switchIsLeftState == 0) {
+				angle = -90;
+			}
 		}
 		
 		double gamepieceDistance = goingToScale ? 280 : 95;
