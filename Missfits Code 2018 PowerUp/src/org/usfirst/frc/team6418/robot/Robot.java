@@ -692,10 +692,13 @@ public class Robot extends IterativeRobot {
 				angle = -90;
 			}
 		}
-		
-		double gamepieceDistance = goingToScale ? 280 : 95;
+		//going to scale is first number, switch is second number
+		//TODO check distances
+		double gamepieceDistance = goingToScale ? 280 : 96;
 		double plateDistance = goingToScale ? 6 : 20.4;
-		double elevatorLiftTime = goingToScale ? 3.0 : 2.0;
+		double elevatorLiftTime = goingToScale ? 5.0 : 2.0;
+		//halie tested the moveElevator and it stops when the max limit switch is pressed
+		double elevatorLiftSpeed = goingToScale ? (-0.5) : (-0.75);
 
 		switch (autoState) {
 		case 0:
@@ -706,7 +709,7 @@ public class Robot extends IterativeRobot {
 		case 1:
 			if (checkIfNotDone(gamepieceDistance, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
-				driveStraight(-0.8);
+				driveStraight(-0.5);
 			} else {
 				autoState++;
 			}
@@ -739,8 +742,10 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 6:
-			if (autoTimer.get() < elevatorLiftTime)
-				moveElevator(-0.75);
+			if (autoTimer.get() < elevatorLiftTime) {
+				moveElevator(elevatorLiftSpeed);
+				SmartDashboard.putNumber("Lifting Elevator", elevatorLiftSpeed);
+			}
 			else {
 				openIntake();
 				autoState++;
