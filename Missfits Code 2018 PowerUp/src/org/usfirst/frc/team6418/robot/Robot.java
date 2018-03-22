@@ -79,6 +79,7 @@ public class Robot extends IterativeRobot {
 
 	public int autoState = 0;
 	public int teleopState = 0;
+	
 	public int switchIsLeftState;
 	public int scaleIsLeftState;
 
@@ -192,10 +193,9 @@ public class Robot extends IterativeRobot {
 	public void teleopInit() {
 
 		// gyro.reset();
-
 		climberSolenoid.set(DoubleSolenoid.Value.kForward);
 		climberDeployed = false;
-		autoState = 0;
+		teleopState = 0;
 
 	}
 
@@ -300,9 +300,9 @@ public class Robot extends IterativeRobot {
 		}
 
 		if (buttonIsPressed(XBoxButtons.A)) {
-			takeInCube();
-			//takeInCube(modeState);
+			teleopState = takeInCube(teleopState);
 		}
+		SmartDashboard.putNumber("Teleop State: ", teleopState);
 		
 		if (buttonIsPressed(XBoxButtons.B)) {
 			dropCube();
@@ -456,15 +456,15 @@ public class Robot extends IterativeRobot {
 			elevatorMotor.set(0);
 	}
 
-	public void takeInCube() {
+	public int takeInCube(int modeState) {
 		//will changing modestate change just this local variable or the global var? 
-		int pastState = autoState;
-		switch (autoState) {
+		int pastState = modeState;
+		switch (modeState) {
 		case 0:
 			if (intakeSolenoid.get() != DoubleSolenoid.Value.kForward) {
 				intakeSolenoid.set(DoubleSolenoid.Value.kForward);
 			} else {
-				autoState++;
+				modeState++;
 			}
 			break;
 		case 1:
@@ -472,7 +472,7 @@ public class Robot extends IterativeRobot {
 				driveStraight(-0.5);
 			}else {
 				stopDrive();
-				autoState ++;
+				modeState ++;
 			}
 			break;
 		case 2:
@@ -483,21 +483,23 @@ public class Robot extends IterativeRobot {
 				}
 			} else {
 				runIntake(0);
-				autoState ++;
+				modeState ++;
 			}
 			break;
 		default:
 			runIntake(0);
 			break;
 		}
-		if (pastState != autoState) {
+		if (pastState != modeState) {
 			runIntake(0);
 			autoTimer.reset();
 			autoTimer.start();
 		}
+		return modeState;
 	}
 	
 	public void dropCube() {
+		//TODO maybe just make this a slower runIntake() 
 		openIntake();
 		runIntake(0.5);
 	}
@@ -617,7 +619,7 @@ public class Robot extends IterativeRobot {
 			angle1 = -34.5;
 			angle2 = 36;
 			turntDistance = 72; // 108-36
-			distanceAfterTurn2 = 6;
+			distanceAfterTurn2 = 13;
 		} else if (switchIsLeftState == 0) {
 			// angle1 = 32.2;
 			// angle2 = -angle1;
