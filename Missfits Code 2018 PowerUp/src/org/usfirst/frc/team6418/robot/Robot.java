@@ -501,7 +501,8 @@ public class Robot extends IterativeRobot {
 	public void dropCube() {
 		//TODO maybe just make this a slower runIntake() 
 		openIntake();
-		runIntake(0.5);
+		runIntake(0.4);
+		//positive is shooting out
 	}
 
 	public void driveStraightSwitch() {
@@ -728,6 +729,85 @@ public class Robot extends IterativeRobot {
 		}
 
 	}
+	
+	public void oppositeSideScale() {
+		int pastState = autoState;
+		double angle = 0;
+		if (scaleIsLeftState == -1)
+			return;
+		else if (scaleIsLeftState == 1) {
+			angle = 90;
+		} else if (scaleIsLeftState == 0) {
+			angle = -90;
+		}
+		switch(autoState) {
+		case 0:
+			if(checkIfNotDone(212.25, 2.0)) {
+				driveStraight(-0.5);
+			}else {
+				autoState++ ;
+			}
+			break;
+		case 1:
+			if(checkIfNotTurnt(angle)) {
+				turnToAngle(angle);
+			}else {
+				autoState++;
+			}
+			break;
+		case 2:
+			if(checkIfNotDone(256.87,2.0)) {
+				driveStraight(-0.5);
+			}else {
+				autoState++;
+			}
+			break;
+		case 3:
+			if(checkIfNotTurnt(-angle)) {
+				turnToAngle(-angle);
+			}else {
+				autoState++;
+			}
+			break;
+		case 4:
+			if(checkIfNotDone(94.65, 2.0)) {
+				driveStraight(-0.5);
+			}else {
+				autoState++;
+			}
+			break;
+		case 5:
+			if(checkIfNotTurnt(-angle)) {
+				turnToAngle(-angle);
+			}else {
+				openIntake();
+				autoState++;
+			}
+			break;
+		case 6:
+			if (autoTimer.get() < 1.0)
+				runIntake(0.5);
+			else {
+				autoState++;
+			}
+			break;
+		default:
+			stopDrive();
+			runIntake(0);
+			moveElevator(0);
+			break;
+		}
+		if (pastState != autoState) {
+			stopDrive();
+			moveElevator(0);
+			runIntake(0);
+			leftEncoderOffset = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
+			rightEncoderOffset = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
+			gyro.reset();
+			autoTimer.reset();
+			autoTimer.start();
+		}
+	}
 
 	public void autoScale(boolean goingToScale) {
 		// UNTESTED do this at svr
@@ -811,7 +891,6 @@ public class Robot extends IterativeRobot {
 			if (autoTimer.get() < 1.0)
 				runIntake(0.5);
 			else {
-				openIntake();
 				autoState++;
 			}
 			break;
