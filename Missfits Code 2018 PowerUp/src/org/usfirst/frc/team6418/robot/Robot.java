@@ -5,6 +5,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
@@ -40,9 +41,15 @@ enum XBoxAxes {
 
 public class Robot extends IterativeRobot {
 
-	// AHRS ahrs = new AHRS(SerialPort.Port.kMXP); /* Alternatives: SPI.Port.kMXP,
-	// I2C.Port.kMXP or SerialPort.Port.kUSB */
+	Spark intakeRight = new Spark(0);
+	Spark intakeLeft = new Spark(1);
+	//TODO
+//	VictorSP intakeRight = new VictorSP(0);
+//	VictorSP intakeLeft = new VictorSP(1);
 
+	VictorSP climber1 = new VictorSP(2);
+	VictorSP climber2 = new VictorSP(3);
+	
 	final DigitalInput elevatorGroundLimit = new DigitalInput(0);
 	final DigitalInput elevatorMaxLimit = new DigitalInput(1);
 
@@ -50,14 +57,6 @@ public class Robot extends IterativeRobot {
 	final TalonSRX kRearLeftChannel = new TalonSRX(3);
 	final TalonSRX kFrontRightChannel = new TalonSRX(1);
 	final TalonSRX kRearRightChannel = new TalonSRX(4);
-
-	VictorSP intakeRight = new VictorSP(0);
-	VictorSP intakeLeft = new VictorSP(1);
-	// practice bot Spark intakeRight = new Spark(0);
-	// practice bot Spark intakeLeft = new Spark(1);
-
-	VictorSP climber1 = new VictorSP(2);
-	VictorSP climber2 = new VictorSP(3);
 
 	Spark elevatorMotor = new Spark(4);
 
@@ -95,9 +94,17 @@ public class Robot extends IterativeRobot {
 
 	public double leftEncoderOffset;
 	public double rightEncoderOffset;
+	
+	public AnalogInput ultrasonic = new AnalogInput(0);
 
 	@Override
 	public void robotInit() {
+		
+		kFrontLeftChannel.setInverted(true);
+		kRearLeftChannel.setInverted(true);
+		// TODO may need to change or remove to match the robot
+		//do we have to change the elevator motor? we won't worry about it
+
 		startPosition.addDefault("Left", StartingPosition.LEFT);
 		startPosition.addObject("Middle", StartingPosition.MIDDLE);
 		startPosition.addObject("Right", StartingPosition.RIGHT);
@@ -113,10 +120,6 @@ public class Robot extends IterativeRobot {
 		autoStrategy.addObject("Only Straight", AutoStrategy.STRAIGHT);
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
-
-		kFrontLeftChannel.setInverted(true);
-		kRearLeftChannel.setInverted(true);
-		// TODO may need to change or remove to match the robot
 
 		// operating compressor
 		compressor.setClosedLoopControl(true);
@@ -302,11 +305,22 @@ public class Robot extends IterativeRobot {
 		if (buttonIsPressed(XBoxButtons.A)) {
 			teleopState = takeInCube(teleopState);
 		}
+		//TODO should i reset this here? 
+		teleopState = 0;
+		
 		SmartDashboard.putNumber("Teleop State: ", teleopState);
 		
 		if (buttonIsPressed(XBoxButtons.B)) {
 			dropCube();
 		}
+		
+		SmartDashboard.putNumber("Ultrasonic Raw Bits", ultrasonic.getValue());
+		SmartDashboard.putNumber("Ultrasonic Average Bits", ultrasonic.getAverageValue());
+		SmartDashboard.putNumber("Ultrasonic Raw Voltage", ultrasonic.getVoltage());
+		SmartDashboard.putNumber("Ultrasonic Average Voltage", ultrasonic.getAverageVoltage());
+		
+		SmartDashboard.putBoolean("Compressor Switch", compressor.getPressureSwitchValue());
+		
 		
 	}
 
@@ -729,7 +743,7 @@ public class Robot extends IterativeRobot {
 		}
 
 	}
-	
+
 	public void oppositeSideScale() {
 		int pastState = autoState;
 		double angle = 0;
@@ -809,7 +823,7 @@ public class Robot extends IterativeRobot {
 		}
 	}
 
-	public void autoScale(boolean goingToScale) {
+	/*public void autoScale(boolean goingToScale) {
 		// UNTESTED do this at svr
 		int pastState = autoState;
 		double angle = 0;
@@ -912,4 +926,119 @@ public class Robot extends IterativeRobot {
 		}
 	}
 
+
+	*/
+	public void fancyScale() {
+
+		// UNTESTED do this at svr
+				int pastState = autoState;
+				double angle = 0;
+				if (scaleIsLeftState == -1)
+					return;
+				else if (scaleIsLeftState == 1) {
+					angle = 90;
+				} else if (scaleIsLeftState == 0) {
+					angle = -90;
+				}
+				SmartDashboard.putBoolean("Going to scale", goingToScale);
+
+				if (!goingToScale) {
+					if (switchIsLeftState == 1) {
+						angle = 90;
+					} else if (switchIsLeftState == 0) {
+						angle = -90;
+					}
+				}
+				// going to scale is first number, switch is second number
+				// TODO check distances
+				double gamepieceDistance = goingToScale ? 280 : 96;
+				double plateDistance = goingToScale ? 6 : 20.4;
+				double elevatorLiftTime = goingToScale ? 5.0 : 2.0;
+				// halie tested the moveElevator and it stops when the max limit switch is
+				// pressed
+				double elevatorLiftSpeed = goingToScale ? (-0.5) : (-0.75);
+
+				switch (autoState) {
+				case 0:
+					autoTimer.reset();
+					autoTimer.start();
+					autoState++;
+					break;
+				case 1:
+					if (checkIfNotDone(gamepieceDistance, 2.0)) {
+						// robot is 3'3", 38 in, 99 cm
+						driveStraight(-0.5);
+					} else {
+						autoState++;
+					}
+					break;
+				case 2:
+					if (autoTimer.get() >= 1.0) {
+						autoState++;
+					}
+					break;
+				case 3:
+					if (checkIfNotTurnt(angle))
+						turnToAngle(angle);
+					else {
+						autoState++;
+					}
+					break;
+				case 4:
+					if (autoTimer.get() < 0.5) {
+						stopDrive();
+					} else {
+						autoState++;
+					}
+					break;
+				case 5:
+					if (checkIfNotDone(plateDistance, 0.2)) {
+						driveStraight(-0.25);
+					} else {
+						autoState++;
+					}
+					break;
+				case 6:
+					if (autoTimer.get() < elevatorLiftTime) {
+						moveElevator(elevatorLiftSpeed);
+						SmartDashboard.putNumber("Lifting Elevator", elevatorLiftSpeed);
+					} else {
+						openIntake();
+						autoState++;
+					}
+					break;
+				case 7:
+					if (autoTimer.get() < 1.0)
+						runIntake(0.5);
+					else {
+						autoState++;
+					}
+					break;
+				default:
+					stopDrive();
+					runIntake(0);
+					moveElevator(0);
+					break;
+				}
+				if (pastState != autoState) {
+					stopDrive();
+					moveElevator(0);
+					runIntake(0);
+					leftEncoderOffset = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
+					rightEncoderOffset = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
+					gyro.reset();
+					autoTimer.reset();
+					autoTimer.start();
+				}
+		
+		
+		
+		
+		
+	}
+	
+	
+	
+	
+	
 }
