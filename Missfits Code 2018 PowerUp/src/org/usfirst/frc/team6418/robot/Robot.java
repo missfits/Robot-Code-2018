@@ -116,7 +116,7 @@ public class Robot extends IterativeRobot {
 
 		autoStrategy.addDefault("Switch From Inside", AutoStrategy.ISWITCH);
 		autoStrategy.addObject("Switch From Outside", AutoStrategy.OSWITCH);
-		autoStrategy.addObject("Scale", AutoStrategy.SCALE);
+		autoStrategy.addObject("Fancy Scale", AutoStrategy.SCALE);
 		autoStrategy.addObject("Only Straight", AutoStrategy.STRAIGHT);
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
@@ -169,22 +169,22 @@ public class Robot extends IterativeRobot {
 		} else if (autoStrategy.getSelected() == AutoStrategy.SCALE) {
 			if ((scaleIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
 					|| (scaleIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
-				autoScale(true);
-			} else if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
-					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
-				autoScale(false);
+				fancyScale(true);
+			} else if ((scaleIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
+					|| (scaleIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
+				fancyScale(false);
 			} else if (startPosition.getSelected() == StartingPosition.MIDDLE) {
 				middleAuto();
 			} else {
 				driveStraightOnly();
 			}
-		} else if (autoStrategy.getSelected() == AutoStrategy.OSWITCH) {
-			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
-					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
-				autoScale(false);
-			} else {
-				driveStraightOnly();
-			}
+//		} else if (autoStrategy.getSelected() == AutoStrategy.OSWITCH) {
+//			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
+//					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
+//				autoScale(false);
+//			} else {
+//				driveStraightOnly();
+//			}
 		} else if (autoStrategy.getSelected() == AutoStrategy.STRAIGHT) {
 			driveStraightOnly();
 		} else {
@@ -824,105 +824,109 @@ public class Robot extends IterativeRobot {
 
 	public void fancyScale(boolean sameSide) {
 
-		// UNTESTED do this at svr
-				int pastState = autoState;
-				double angle = 0;
-				if (scaleIsLeftState == -1)
-					return;
-				else if (scaleIsLeftState == 1) {
-					angle = 90;
-				} else if (scaleIsLeftState == 0) {
-					angle = -90;
-				}
-				
-				
-				
-				switch (autoState) {
-				case 0:
-					autoTimer.reset();
-					autoTimer.start();
+		int pastState = autoState;
+		int sameSideAngle = 0, oppositeAngle1 = 0, oppositeAngle2 = 0;
+		if (sameSide) {
+			if (scaleIsLeftState == 1)
+				sameSideAngle = 30;
+			else if (scaleIsLeftState == 0)
+				sameSideAngle = -30;
+		} else {
+			// not same side
+			if (scaleIsLeftState == 0) {
+				oppositeAngle1 = 90;
+				oppositeAngle2 = -120;
+			} else if (scaleIsLeftState == 1) {
+				oppositeAngle1 = -90;
+				oppositeAngle2 = 120;
+			}
+		}
+
+		switch (autoState) {
+		case 0:
+			autoTimer.reset();
+			autoTimer.start();
+			autoState++;
+			break;
+		case 1:
+			if (checkIfNotDone(100, 2.0)) {
+				// robot is 3'3", 38 in, 99 cm
+				driveStraight(-0.5);
+			} else {
+				autoState++;
+			}
+			break;
+
+		case 2:
+			if (sameSide)
+				autoState = 5;
+			else {
+				if (checkIfNotTurnt(oppositeAngle1))
+					turnToAngle(oppositeAngle1);
+				else {
 					autoState++;
-					break;
-				case 1:
-					if (checkIfNotDone(100, 2.0)) {
-						// robot is 3'3", 38 in, 99 cm
-						driveStraight(-0.5);
-					} else {
-						autoState++;
-					}
-					break;
-				
-				case 2:
-					if (sameSide)
-						autoState = 5;
-					else {
-						if (checkIfNotTurnt(90) )
-							turnToAngle(90);
-						else {
-							autoState++;
-						}
-					}
-					break;
-				case 3: 
-					if (checkIfNotDone(150, 2.0))
-						driveStraight(-0.5);
-					else {
-						autoState ++;
-					}
-				case 4:
-					if (checkIfNotTurnt(-90) )
-						turnToAngle(-90);
-					else {
-						autoState++;
-					}
-					break;
-				case 5: 
-					if (checkIfNotTurnt(30 or -30)) 
-						turnToAngle(30);
-					else {
-						autoState++;
-					}
-					break;
-				case 7:
-					if (checkIfNotDone(12, 0.2)) {
-						driveStraight(-0.25);
-					} else {
-						autoState++;
-					}
-					break;
-				case 6:
-					if (autoTimer.get() < 5) {
-						moveElevator(0.4);
-					} else {
-						openIntake();
-						autoState++;
-					}
-					break;
-				case 8:
-					if (autoTimer.get() < 1.0)
-						runIntake(0.5);
-					else {
-						autoState++;
-					}
-					break;
-				default:
-					stopDrive();
-					runIntake(0);
-					moveElevator(0);
-					break;
 				}
-				if (pastState != autoState) {
-					stopDrive();
-					moveElevator(0);
-					runIntake(0);
-					leftEncoderOffset = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
-					rightEncoderOffset = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
-					gyro.reset();
-					autoTimer.reset();
-					autoTimer.start();
-				}
-		
-		
+			}
+			break;
+		case 3:
+			if (checkIfNotDone(150, 2.0))
+				driveStraight(-0.5);
+			else {
+				autoState++;
+			}
+		case 4:
+			if (checkIfNotTurnt(oppositeAngle2))
+				turnToAngle(oppositeAngle2);
+			else {
+				autoState = 6;
+			}
+			break;
+		case 5:
+			if (checkIfNotTurnt(sameSideAngle))
+				turnToAngle(sameSideAngle);
+			else {
+				autoState++;
+			}
+			break;
+		case 6:
+			if (autoTimer.get() < 5) {
+				moveElevator(0.4);
+			} else {
+				openIntake();
+				autoState++;
+			}
+			break;
+		case 7:
+			if (checkIfNotDone(12, 0.2)) {
+				driveStraight(-0.25);
+			} else {
+				autoState++;
+			}
+			break;
+		case 8:
+			if (autoTimer.get() < 1.0)
+				runIntake(0.5);
+			else {
+				autoState++;
+			}
+			break;
+		default:
+			stopDrive();
+			runIntake(0);
+			moveElevator(0);
+			break;
+		}
+		if (pastState != autoState) {
+			stopDrive();
+			moveElevator(0);
+			runIntake(0);
+			leftEncoderOffset = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
+			rightEncoderOffset = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
+			gyro.reset();
+			autoTimer.reset();
+			autoTimer.start();
+		}
+
 	}
 
 }
