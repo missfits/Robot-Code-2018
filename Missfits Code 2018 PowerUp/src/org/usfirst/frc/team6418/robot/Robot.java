@@ -849,7 +849,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(100, 2.0)) {
+			if (checkIfNotDone(205, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.5);
 			} else {
