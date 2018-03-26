@@ -856,13 +856,14 @@ public class Robot extends IterativeRobot {
 		} else {
 			// not same side
 			if (scaleIsLeftState == 0) {
-				oppositeAngle1 = 90;
-				oppositeAngle2 = -110;
+				oppositeAngle1 = 89;
+				oppositeAngle2 = -120;
 			} else if (scaleIsLeftState == 1) {
-				oppositeAngle1 = -90;
-				oppositeAngle2 = 110;
+				oppositeAngle1 = -89;
+				oppositeAngle2 = 120;
 			}
 		}
+
 		System.out.println("Same Side Bool: " + sameSide);
 		System.out.println("Same Side Angle: " + sameSideAngle);
 		System.out.println("Opposite Angle 1: " + oppositeAngle1);
@@ -874,16 +875,17 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(190, 2.0)) {
+			if (checkIfNotDone(182, 2.0)) {
+				//195 with 0.5
 				// robot is 3'3", 38 in, 99 cm
-				driveStraight(-0.5);
+				driveStraight(-0.8);
 			} else {
 				autoState++;
 			}
 			break;
 		case 2:
 			if (sameSide)
-				autoState = 5;
+				autoState = 6;
 			else {
 				if (checkIfNotTurnt(oppositeAngle1))
 					turnToAngle(oppositeAngle1);
@@ -893,42 +895,48 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 3:
-			if (checkIfNotDone(210, 2.0))
-				driveForward(-0.5);
+			if(autoTimer.get() < 0.5) {
+				stopDrive();
+			}else {
+				autoState ++;
+			}
+			break;
+		case 4:
+			if (checkIfNotDone(197, 2.0))
+				driveForward(-0.8);
 			else {
 				autoState++;
 			}
 			break;
-		case 4:
+		case 5:
 			if (checkIfNotTurnt(oppositeAngle2))
 				turnToAngle(oppositeAngle2);
 			else {
-				autoState = 6;
+				autoState = 7;
 			}
 			break;
-		case 5:
+		case 6:
 			if (checkIfNotTurnt(sameSideAngle))
 				turnToAngle(sameSideAngle);
 			else {
 				autoState++;
 			}
 			break;
-		case 6:
+		case 7:
 			if (autoTimer.get() < 5) {
 				moveElevator(-0.4);
 			} else {
-				//openIntake();
 				autoState++;
 			}
 			break;
-		case 7:
+		case 8:
 			if (checkIfNotDone(36, 0.2)) {
 				driveStraight(-0.25);
 			} else {
 				autoState++;
 			}
 			break;
-		case 8:
+		case 9:
 			if (autoTimer.get() < 1.0)
 				runIntake(0.5);
 			else {
