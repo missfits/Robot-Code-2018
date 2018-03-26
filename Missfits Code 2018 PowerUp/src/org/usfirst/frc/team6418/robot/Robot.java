@@ -262,13 +262,12 @@ public class Robot extends IterativeRobot {
 			intakeLeft.set(0);
 			intakeRight.set(0);
 		}
-
 		// double minX = Math.min(Math.abs(leftJoystickX), Math.abs(rightJoystickX));
-		if (Math.abs(rightJoystickX) > 0.25) {
+		if (Math.abs(rightJoystickX) > 0.4) {
 			kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX);
 			kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX);
 			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX);
-			kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX);
+			kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX); 
 			// manual strafing
 		} else {
 			kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
@@ -864,10 +863,10 @@ public class Robot extends IterativeRobot {
 			}
 		}
 
-		System.out.println("Same Side Bool: " + sameSide);
+		/*System.out.println("Same Side Bool: " + sameSide);
 		System.out.println("Same Side Angle: " + sameSideAngle);
 		System.out.println("Opposite Angle 1: " + oppositeAngle1);
-		System.out.println("Opposite Angle 2: " + oppositeAngle2);
+		System.out.println("Opposite Angle 2: " + oppositeAngle2);*/
 		switch (autoState) {
 		case 0:
 			autoTimer.reset();
@@ -902,7 +901,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 4:
-			if (checkIfNotDone(197, 2.0))
+			if (checkIfNotDone(192, 2.0))
 				driveForward(-0.8);
 			else {
 				autoState++;
