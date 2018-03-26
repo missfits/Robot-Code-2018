@@ -239,6 +239,8 @@ public class Robot extends IterativeRobot {
 		// thing
 
 		// for elevator RED is UP. Now pushing up on XBOX makes elevator drive up
+
+		
 		if (elevatorJoystickY > 0.1 && !elevatorGroundLimitPressed) {
 			elevatorMotor.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "DOWN");
@@ -249,7 +251,8 @@ public class Robot extends IterativeRobot {
 			elevatorMotor.set(0);
 			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
-
+		
+		
 		// -----controls intake wheels-----
 		// in
 		if (getAxis(XBoxAxes.LEFT_TRIGGER) > 0.2) {
@@ -478,12 +481,18 @@ public class Robot extends IterativeRobot {
 		// moving up is positive
 		// get returns true when pressed
 		
-		if (speed < 0 && !elevatorMaxLimit.get())
+		if (speed < 0 && !elevatorMaxLimit.get()) {
 			elevatorMotor.set(speed);
-		else if (speed > 0 && !elevatorGroundLimit.get())
+			SmartDashboard.putString("Driving the elevator", "UP");
+		}
+		else if (speed > 0 && !elevatorGroundLimit.get()) {
 			elevatorMotor.set(speed);
-		else
+			SmartDashboard.putString("Driving the elevator", "DOWN");
+		}
+		else {
 			elevatorMotor.set(0);
+			SmartDashboard.putString("Driving the elevator", "OFF");
+		}
 	}
 
 	public int takeInCube(int modeState) {
