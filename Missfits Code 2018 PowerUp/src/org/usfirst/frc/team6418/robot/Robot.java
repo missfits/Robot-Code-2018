@@ -72,6 +72,7 @@ public class Robot extends IterativeRobot {
 	public Compressor compressor = new Compressor(0);
 	public DoubleSolenoid intakeSolenoid = new DoubleSolenoid(2, 3);
 	public DoubleSolenoid climberSolenoid = new DoubleSolenoid(0, 1);
+	public DoubleSolenoid intakeLiftSolenoid = new DoubleSolenoid(4,5);
 
 	public Timer autoTimer = new Timer();
 	public Timer solenoidTimer = new Timer();
@@ -153,6 +154,8 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		// Scheduler.getInstance().run();
+		angleIntake();
+		
 		if (autoStrategy.getSelected() == AutoStrategy.ISWITCH) {
 
 			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
@@ -225,6 +228,8 @@ public class Robot extends IterativeRobot {
 
 		// gonna have to put boolean to make sure climber code doesn't run unless at
 		// right height
+		
+		angleIntake();
 
 		if (Math.abs(climberJoystickY) >= 0.2 && climberDeployed) {
 			// TODO let the climber move backwards, move DOWN
@@ -492,6 +497,14 @@ public class Robot extends IterativeRobot {
 		else {
 			elevatorMotor.set(0);
 			SmartDashboard.putString("Driving the elevator", "OFF");
+		}
+	}
+	
+	public void angleIntake() {
+		if (elevatorGroundLimit.get()) {
+			intakeLiftSolenoid.set(DoubleSolenoid.Value.kForward);
+		}else {
+			intakeLiftSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
 	}
 
