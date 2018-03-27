@@ -72,7 +72,7 @@ public class Robot extends IterativeRobot {
 	public Compressor compressor = new Compressor(0);
 	public DoubleSolenoid intakeSolenoid = new DoubleSolenoid(2, 3);
 	public DoubleSolenoid climberSolenoid = new DoubleSolenoid(0, 1);
-	public DoubleSolenoid intakeLiftSolenoid = new DoubleSolenoid(4,5);
+	public DoubleSolenoid intakeLiftSolenoid = new DoubleSolenoid(4, 5);
 
 	public Timer autoTimer = new Timer();
 	public Timer solenoidTimer = new Timer();
@@ -116,7 +116,6 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putData("Using Encoders", usingEncoders);
 
 		autoStrategy.addDefault("Switch From Inside", AutoStrategy.ISWITCH);
-		//autoStrategy.addObject("Switch From Outside", AutoStrategy.OSWITCH);
 		autoStrategy.addObject("Fancy Scale", AutoStrategy.SCALE);
 		autoStrategy.addObject("Only Straight", AutoStrategy.STRAIGHT);
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
@@ -124,21 +123,15 @@ public class Robot extends IterativeRobot {
 
 		// operating compressor
 		compressor.setClosedLoopControl(true);
-		
-		
 		closeIntake();
-
 	}
 
 	@Override
 	public void disabledInit() {
-
 	}
 
 	@Override
 	public void disabledPeriodic() {
-
-		// Scheduler.getInstance().run();
 	}
 
 	@Override
@@ -153,9 +146,8 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void autonomousPeriodic() {
-		// Scheduler.getInstance().run();
 		angleIntake();
-		
+
 		if (autoStrategy.getSelected() == AutoStrategy.ISWITCH) {
 
 			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
@@ -178,19 +170,12 @@ public class Robot extends IterativeRobot {
 			} else {
 				driveStraightOnly();
 			}
-//		} else if (autoStrategy.getSelected() == AutoStrategy.OSWITCH) {
-//			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
-//					|| (switchIsLeftState == 0 && startPosition.getSelected() == StartingPosition.RIGHT)) {
-//				autoScale(false);
-//			} else {
-//				driveStraightOnly();
-//			}
 		} else if (autoStrategy.getSelected() == AutoStrategy.STRAIGHT) {
 			driveStraightOnly();
 		} else {
 			stopDrive();
 		}
-		
+
 		SmartDashboard.putNumber("Switch Left? (1 = true) ", switchIsLeftState);
 		SmartDashboard.putNumber("Scale Left? (1 = true) ", scaleIsLeftState);
 		SmartDashboard.putNumber("Auto State:", autoState);
@@ -199,12 +184,9 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void teleopInit() {
-
-		// gyro.reset();
 		climberSolenoid.set(DoubleSolenoid.Value.kForward);
 		climberDeployed = false;
 		teleopState = 0;
-
 	}
 
 	@Override
@@ -213,7 +195,6 @@ public class Robot extends IterativeRobot {
 
 		boolean elevatorGroundLimitPressed = elevatorGroundLimit.get();
 		boolean elevatorMaxLimitPressed = elevatorMaxLimit.get();
-		// intake left is wired normally open instead of closed
 
 		double leftJoystickY = leftStick.getY();
 		double rightJoystickX = rightStick.getX();
@@ -221,14 +202,12 @@ public class Robot extends IterativeRobot {
 
 		double elevatorJoystickY = getAxis(XBoxAxes.RIGHT_Y);
 		double climberJoystickY = getAxis(XBoxAxes.LEFT_Y);
-		// SFR -halie
 		// the xbox joystic is inverted (joystick down registers as positive AND the
 		// spark is wired backwards so the
 		// negatives cancell each other out
-
 		// gonna have to put boolean to make sure climber code doesn't run unless at
 		// right height
-		
+
 		angleIntake();
 
 		if (Math.abs(climberJoystickY) >= 0.2 && climberDeployed) {
@@ -245,7 +224,6 @@ public class Robot extends IterativeRobot {
 
 		// for elevator RED is UP. Now pushing up on XBOX makes elevator drive up
 
-		
 		if (elevatorJoystickY > 0.1 && !elevatorGroundLimitPressed) {
 			elevatorMotor.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "DOWN");
@@ -256,8 +234,7 @@ public class Robot extends IterativeRobot {
 			elevatorMotor.set(0);
 			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
-		
-		
+
 		// -----controls intake wheels-----
 		// in
 		if (getAxis(XBoxAxes.LEFT_TRIGGER) > 0.2) {
@@ -270,12 +247,12 @@ public class Robot extends IterativeRobot {
 			intakeLeft.set(0);
 			intakeRight.set(0);
 		}
-		// double minX = Math.min(Math.abs(leftJoystickX), Math.abs(rightJoystickX));
+
 		if (Math.abs(rightJoystickX) > 0.4) {
 			kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX);
 			kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX);
 			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX);
-			kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX); 
+			kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX);
 			// manual strafing
 		} else {
 			kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
@@ -288,7 +265,6 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putBoolean("Elevator Ground Limit Pressed", elevatorGroundLimitPressed);
 		SmartDashboard.putBoolean("Elevator Max Limit Pressed", elevatorMaxLimitPressed);
 		smartDashboardEncoders();
-		// SmartDashboard.putNumber("NavX Angle", ahrs.getYaw());
 
 		if (buttonIsPressed(XBoxButtons.RIGHT_BUMPER)) {
 			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
@@ -314,8 +290,7 @@ public class Robot extends IterativeRobot {
 		if (buttonIsPressed(XBoxButtons.A)) {
 			teleopState = takeInCube(teleopState);
 			SmartDashboard.putNumber("Teleop State: ", teleopState);
-		}
-		else if (teleopState > 2) {
+		} else if (teleopState > 2) {
 			teleopState = 0;
 		}
 
@@ -441,8 +416,7 @@ public class Robot extends IterativeRobot {
 		kFrontRightChannel.set(ControlMode.PercentOutput, speed);
 		kRearRightChannel.set(ControlMode.PercentOutput, speed);
 	}
-	
-	
+
 	public void driveStraight(double speed) {
 		double leftSpeed = speed * getVoltageCompensationMultipler();
 		double rightSpeed = speed * getVoltageCompensationMultipler();
@@ -451,19 +425,19 @@ public class Robot extends IterativeRobot {
 		} else if (gyro.getAngle() > 0) {
 			rightSpeed *= (1 + gyro.getAngle() * 0.5);
 		}
-		if (leftSpeed >= 1.0) 
+		if (leftSpeed >= 1.0)
 			leftSpeed = 1;
-		else if (leftSpeed <= -1.0) 
+		else if (leftSpeed <= -1.0)
 			leftSpeed = -1;
-		if (rightSpeed >= 1.0) 
+		if (rightSpeed >= 1.0)
 			rightSpeed = 1;
-		else if (rightSpeed <= -1.0) 
+		else if (rightSpeed <= -1.0)
 			rightSpeed = -1;
 		kFrontLeftChannel.set(ControlMode.PercentOutput, leftSpeed);
 		kRearLeftChannel.set(ControlMode.PercentOutput, leftSpeed);
 		kFrontRightChannel.set(ControlMode.PercentOutput, rightSpeed);
 		kRearRightChannel.set(ControlMode.PercentOutput, rightSpeed);
-		
+
 		SmartDashboard.putNumber("LEFT Speed Drive Straight", leftSpeed);
 		SmartDashboard.putNumber("RIGHT Speed Drive Straight", rightSpeed);
 	}
@@ -483,43 +457,32 @@ public class Robot extends IterativeRobot {
 
 	// TODO
 	public void moveElevator(double speed) {
-		// moving up is positive
 		// get returns true when pressed
-		
 		if (speed < 0 && !elevatorMaxLimit.get()) {
 			elevatorMotor.set(speed);
 			SmartDashboard.putString("Driving the elevator", "UP");
-		}
-		else if (speed > 0 && !elevatorGroundLimit.get()) {
+		} else if (speed > 0 && !elevatorGroundLimit.get()) {
 			elevatorMotor.set(speed);
 			SmartDashboard.putString("Driving the elevator", "DOWN");
-		}
-		else {
+		} else {
 			elevatorMotor.set(0);
 			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
 	}
-	
+
 	public void angleIntake() {
 		if (elevatorGroundLimit.get()) {
 			intakeLiftSolenoid.set(DoubleSolenoid.Value.kForward);
-		}else {
+		} else {
 			intakeLiftSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
 	}
 
 	public int takeInCube(int modeState) {
-		// will changing modestate change just this local variable or the global var?
 		int pastState = modeState;
 		runIntake(-0.5);
 		switch (modeState) {
 		case 0:
-//			if (intakeSolenoid.get() != DoubleSolenoid.Value.kForward) {
-//				intakeSolenoid.set(DoubleSolenoid.Value.kForward);
-//				//if tis closed then open
-//			} else {
-//				modeState++;
-//			}
 			openIntake();
 			modeState++;
 			break;
@@ -555,7 +518,7 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void dropCube() {
-		// TODO maybe just make this a slower runIntake()
+		// unnecessary
 		openIntake();
 		runIntake(0.4);
 		// positive is shooting out
@@ -578,10 +541,9 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 2:
-			if (autoTimer.get() < 2.0)
-				// TODO
+			if (autoTimer.get() < 2.0) {
 				moveElevator(-0.75);
-			else {
+			} else {
 				autoState++;
 			}
 			break;
@@ -593,9 +555,9 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 4:
-			if (autoTimer.get() < 1.0)
+			if (autoTimer.get() < 1.0) {
 				runIntake(0.5);
-			else {
+			} else {
 				openIntake();
 				autoState++;
 			}
@@ -636,7 +598,6 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			// increased distance from 80 to 85
 			if (checkIfNotDone(85, 1.5)) {
 				driveForward(-0.3);
 			} else {
@@ -648,10 +609,6 @@ public class Robot extends IterativeRobot {
 				autoState++;
 			}
 			break;
-		/*
-		 * case 2: //if(turnToAngle(90)) { stopDrive(); gyro.reset(); autoTimer.reset();
-		 * autoTimer.start(); autoState++; // } break;
-		 */
 		default:
 			stopDrive();
 			runIntake(0);
@@ -660,7 +617,6 @@ public class Robot extends IterativeRobot {
 			rightEncoderOffset = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
 			break;
 		}
-
 	}
 
 	public void middleAuto() {
@@ -672,19 +628,15 @@ public class Robot extends IterativeRobot {
 			return;
 		else if (switchIsLeftState == 1) {
 			// is left TODO
-			// angle2 = -angle1;
 			angle1 = -34.5;
 			angle2 = 36;
 			turntDistance = 72; // 108-36
 			distanceAfterTurn2 = 13;
 		} else if (switchIsLeftState == 0) {
-			// angle1 = 32.2;
-			// angle2 = -angle1;
 			angle1 = 35;
 			angle2 = -37;
 			turntDistance = 70;
 			distanceAfterTurn2 = 13;
-			// turntDistance = 75; //105-36
 		}
 
 		switch (autoState) {
@@ -715,12 +667,8 @@ public class Robot extends IterativeRobot {
 				autoState++;
 			}
 			break;
-		// SFR -halie
-		// adding a pause to account for angular momentum that screws with our
-		// checkIfNotDone drift compensation
 		case 4:
 			if (checkIfNotDone(turntDistance, 2.0)) {
-				// TODO was drive straight at -0.5
 				driveForward(-0.4);
 				if (autoTimer.get() < 2.0) {
 					moveElevator(-0.85);
@@ -750,16 +698,15 @@ public class Robot extends IterativeRobot {
 			break;
 		case 7:
 
-			if (autoTimer.get() < 1.0)
+			if (autoTimer.get() < 1.0) {
 				runIntake(0.5);
-			else {
+			} else {
 				openIntake();
 				autoState++;
 			}
 			break;
 		case 8:
 			// 40/tan((32*pi/180))-40/tan(35*pi/180)+6
-			// if (checkIfNotDone(6, 2.0)) {
 			if (checkIfNotDone(6, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveForward(0.5);
@@ -783,15 +730,14 @@ public class Robot extends IterativeRobot {
 			autoTimer.reset();
 			autoTimer.start();
 		}
-
 	}
 
 	public void oppositeSideScale() {
 		int pastState = autoState;
 		double angle = 0;
-		if (scaleIsLeftState == -1)
+		if (scaleIsLeftState == -1) {
 			return;
-		else if (scaleIsLeftState == 1) {
+		} else if (scaleIsLeftState == 1) {
 			angle = 90;
 		} else if (scaleIsLeftState == 0) {
 			angle = -90;
@@ -841,9 +787,9 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 6:
-			if (autoTimer.get() < 1.0)
+			if (autoTimer.get() < 1.0) {
 				runIntake(0.5);
-			else {
+			} else {
 				autoState++;
 			}
 			break;
@@ -870,10 +816,11 @@ public class Robot extends IterativeRobot {
 		int pastState = autoState;
 		int sameSideAngle = 0, oppositeAngle1 = 0, oppositeAngle2 = 0;
 		if (sameSide) {
-			if (scaleIsLeftState == 1)
+			if (scaleIsLeftState == 1) {
 				sameSideAngle = 20;
-			else if (scaleIsLeftState == 0)
+			} else if (scaleIsLeftState == 0) {
 				sameSideAngle = -20;
+			}
 		} else {
 			// not same side
 			if (scaleIsLeftState == 0) {
@@ -884,11 +831,6 @@ public class Robot extends IterativeRobot {
 				oppositeAngle2 = 120;
 			}
 		}
-
-		/*System.out.println("Same Side Bool: " + sameSide);
-		System.out.println("Same Side Angle: " + sameSideAngle);
-		System.out.println("Opposite Angle 1: " + oppositeAngle1);
-		System.out.println("Opposite Angle 2: " + oppositeAngle2);*/
 		switch (autoState) {
 		case 0:
 			autoTimer.reset();
@@ -897,7 +839,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 1:
 			if (checkIfNotDone(182, 2.0)) {
-				//195 with 0.5
+				// 195 with 0.5
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.8);
 			} else {
@@ -905,9 +847,9 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 2:
-			if (sameSide)
+			if (sameSide) {
 				autoState = 6;
-			else {
+			} else {
 				if (checkIfNotTurnt(oppositeAngle1))
 					turnToAngle(oppositeAngle1);
 				else {
@@ -916,30 +858,30 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 3:
-			if(autoTimer.get() < 0.5) {
+			if (autoTimer.get() < 0.5) {
 				stopDrive();
-			}else {
-				autoState ++;
+			} else {
+				autoState++;
 			}
 			break;
 		case 4:
-			if (checkIfNotDone(192, 2.0))
+			if (checkIfNotDone(192, 2.0)) {
 				driveForward(-0.8);
-			else {
+			} else {
 				autoState++;
 			}
 			break;
 		case 5:
-			if (checkIfNotTurnt(oppositeAngle2))
+			if (checkIfNotTurnt(oppositeAngle2)) {
 				turnToAngle(oppositeAngle2);
-			else {
+			} else {
 				autoState = 7;
 			}
 			break;
 		case 6:
-			if (checkIfNotTurnt(sameSideAngle))
+			if (checkIfNotTurnt(sameSideAngle)) {
 				turnToAngle(sameSideAngle);
-			else {
+			} else {
 				autoState++;
 			}
 			break;
@@ -958,9 +900,9 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 9:
-			if (autoTimer.get() < 1.0)
+			if (autoTimer.get() < 1.0) {
 				runIntake(0.5);
-			else {
+			} else {
 				autoState++;
 			}
 			break;
@@ -980,7 +922,5 @@ public class Robot extends IterativeRobot {
 			autoTimer.reset();
 			autoTimer.start();
 		}
-
 	}
-
 }
