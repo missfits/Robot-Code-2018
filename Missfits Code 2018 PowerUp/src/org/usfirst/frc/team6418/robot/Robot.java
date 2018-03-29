@@ -41,17 +41,19 @@ enum XBoxAxes {
 
 public class Robot extends IterativeRobot {
 
-	Spark intakeRight = new Spark(0);
-	Spark intakeLeft = new Spark(1);
+	//Spark intakeRight = new Spark(0);
+	//Spark intakeLeft = new Spark(1);
 	// TODO
-	// VictorSP intakeRight = new VictorSP(0);
-	// VictorSP intakeLeft = new VictorSP(1);
+	VictorSP intakeRight = new VictorSP(0);
+	VictorSP intakeLeft = new VictorSP(1);
 
 	VictorSP climber1 = new VictorSP(2);
 	VictorSP climber2 = new VictorSP(3);
 
 	final DigitalInput elevatorGroundLimit = new DigitalInput(0);
 	final DigitalInput elevatorMaxLimit = new DigitalInput(1);
+	
+	final AnalogInput elevatorPot = new AnalogInput(0);
 
 	final TalonSRX kFrontLeftChannel = new TalonSRX(2);
 	final TalonSRX kRearLeftChannel = new TalonSRX(3);
@@ -95,8 +97,6 @@ public class Robot extends IterativeRobot {
 
 	public double leftEncoderOffset;
 	public double rightEncoderOffset;
-
-	public AnalogInput ultrasonic = new AnalogInput(0);
 
 	@Override
 	public void robotInit() {
@@ -192,6 +192,8 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void teleopPeriodic() {
 		Scheduler.getInstance().run();
+		
+		SmartDashboard.putNumber("Potentiometer Output", elevatorPot.getValue());
 
 		boolean elevatorGroundLimitPressed = elevatorGroundLimit.get();
 		boolean elevatorMaxLimitPressed = elevatorMaxLimit.get();
@@ -287,21 +289,21 @@ public class Robot extends IterativeRobot {
 			climberSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
 
-		if (buttonIsPressed(XBoxButtons.A)) {
-			teleopState = takeInCube(teleopState);
-			SmartDashboard.putNumber("Teleop State: ", teleopState);
-		} else if (teleopState > 2) {
-			teleopState = 0;
-		}
+//		if (buttonIsPressed(XBoxButtons.A)) {
+//			teleopState = takeInCube(teleopState);
+//			SmartDashboard.putNumber("Teleop State: ", teleopState);
+//		} else if (teleopState > 2) {
+//			teleopState = 0;
+//		}
 
 		if (buttonIsPressed(XBoxButtons.B)) {
 			dropCube();
 		}
 
-		SmartDashboard.putNumber("Ultrasonic Raw Bits", ultrasonic.getValue());
+		/*SmartDashboard.putNumber("Ultrasonic Raw Bits", ultrasonic.getValue());
 		SmartDashboard.putNumber("Ultrasonic Average Bits", ultrasonic.getAverageValue());
 		SmartDashboard.putNumber("Ultrasonic Raw Voltage", ultrasonic.getVoltage());
-		SmartDashboard.putNumber("Ultrasonic Average Voltage", ultrasonic.getAverageVoltage());
+		SmartDashboard.putNumber("Ultrasonic Average Voltage", ultrasonic.getAverageVoltage());*/
 
 		SmartDashboard.putBoolean("Compressor Switch", compressor.getPressureSwitchValue());
 
@@ -359,7 +361,7 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("Gyro Angle:", gyro.getAngle());
 	}
 
-	public boolean checkIfNotDone(double distance, double time) {
+	public boolean checkIfNotDoneMoving(double distance, double time) {
 		if (usingEncoders.getSelected() && Math.abs(getLeftEncoderValue()) >= (distance / 18.85) * 4096) {
 			return false;
 		} else if (!usingEncoders.getSelected() && autoTimer.get() >= time) {
@@ -519,9 +521,19 @@ public class Robot extends IterativeRobot {
 
 	public void dropCube() {
 		// unnecessary
-		openIntake();
+	//	openIntake();
 		runIntake(0.4);
 		// positive is shooting out
+	}
+	
+	public boolean checkIfTooLow(boolean goingToSwitch) {
+		int switchHeight = 3;
+		int scaleHeight = 5;
+		int correctOutput = goingToSwitch? switchHeight : scaleHeight;
+		if(correctOutput > elevatorPot.getValue()) {
+			return true;
+		}
+		return false;
 	}
 
 	public void driveStraightSwitch() {
@@ -533,7 +545,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(65, 2.0)) {
+			if (checkIfNotDoneMoving(65, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveForward(-0.5);
 			} else {
@@ -541,14 +553,14 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 2:
-			if (autoTimer.get() < 2.0) {
+			if (checkIfTooLow(true)) {
 				moveElevator(-0.75);
 			} else {
 				autoState++;
 			}
 			break;
 		case 3:
-			if (checkIfNotDone(15, 2.0)) {
+			if (checkIfNotDoneMoving(15, 2.0)) {
 				driveForward(-0.25);
 			} else {
 				autoState++;
@@ -563,7 +575,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 5:
-			if (checkIfNotDone(20, 1.0)) {
+			if (checkIfNotDoneMoving(20, 1.0)) {
 				driveForward(0.25);
 			} else {
 				autoState++;
@@ -598,7 +610,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(85, 1.5)) {
+			if (checkIfNotDoneMoving(85, 1.5)) {
 				driveForward(-0.3);
 			} else {
 				stopDrive();
@@ -646,7 +658,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(6, 2.0)) {
+			if (checkIfNotDoneMoving(6, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveForward(-0.5);
 			} else {
@@ -668,9 +680,9 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 4:
-			if (checkIfNotDone(turntDistance, 2.0)) {
+			if (checkIfNotDoneMoving(turntDistance, 2.0)) {
 				driveForward(-0.4);
-				if (autoTimer.get() < 2.0) {
+				if (checkIfTooLow(true)) {
 					moveElevator(-0.85);
 				} else {
 					moveElevator(0);
@@ -689,7 +701,7 @@ public class Robot extends IterativeRobot {
 		case 6:
 			// 40/tan((32*pi/180))-40/tan(35*pi/180)+6
 			// if (checkIfNotDone(6, 2.0)) {
-			if (checkIfNotDone(distanceAfterTurn2, 2.0)) {
+			if (checkIfNotDoneMoving(distanceAfterTurn2, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveForward(-0.5);
 			} else {
@@ -707,7 +719,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 8:
 			// 40/tan((32*pi/180))-40/tan(35*pi/180)+6
-			if (checkIfNotDone(6, 2.0)) {
+			if (checkIfNotDoneMoving(6, 2.0)) {
 				// robot is 3'3", 38 in, 99 cm
 				driveForward(0.5);
 			} else {
@@ -744,7 +756,7 @@ public class Robot extends IterativeRobot {
 		}
 		switch (autoState) {
 		case 0:
-			if (checkIfNotDone(212.25, 2.0)) {
+			if (checkIfNotDoneMoving(212.25, 2.0)) {
 				driveForward(-0.5);
 			} else {
 				autoState++;
@@ -758,7 +770,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 2:
-			if (checkIfNotDone(256.87, 2.0)) {
+			if (checkIfNotDoneMoving(256.87, 2.0)) {
 				driveForward(-0.5);
 			} else {
 				autoState++;
@@ -772,7 +784,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 4:
-			if (checkIfNotDone(94.65, 2.0)) {
+			if (checkIfNotDoneMoving(94.65, 2.0)) {
 				driveForward(-0.5);
 			} else {
 				autoState++;
@@ -838,7 +850,7 @@ public class Robot extends IterativeRobot {
 			autoState++;
 			break;
 		case 1:
-			if (checkIfNotDone(182, 2.0)) {
+			if (checkIfNotDoneMoving(182, 2.0)) {
 				// 195 with 0.5
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.8);
@@ -865,7 +877,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 4:
-			if (checkIfNotDone(192, 2.0)) {
+			if (checkIfNotDoneMoving(192, 2.0)) {
 				driveForward(-0.8);
 			} else {
 				autoState++;
@@ -886,14 +898,14 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 7:
-			if (autoTimer.get() < 5) {
+			if (checkIfTooLow(false)) {
 				moveElevator(-0.4);
 			} else {
 				autoState++;
 			}
 			break;
 		case 8:
-			if (checkIfNotDone(36, 0.2)) {
+			if (checkIfNotDoneMoving(36, 0.2)) {
 				driveStraight(-0.25);
 			} else {
 				autoState++;
