@@ -146,8 +146,6 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void autonomousPeriodic() {
-		angleIntake();
-
 		if (autoStrategy.getSelected() == AutoStrategy.ISWITCH) {
 
 			if ((switchIsLeftState == 1 && startPosition.getSelected() == StartingPosition.LEFT)
@@ -210,7 +208,7 @@ public class Robot extends IterativeRobot {
 		// gonna have to put boolean to make sure climber code doesn't run unless at
 		// right height
 
-		angleIntake();
+		tiltIntake();
 
 		if (Math.abs(climberJoystickY) >= 0.2 && climberDeployed) {
 			// TODO let the climber move backwards, move DOWN
@@ -226,10 +224,10 @@ public class Robot extends IterativeRobot {
 
 		// for elevator RED is UP. Now pushing up on XBOX makes elevator drive up
 
-		if (elevatorJoystickY > 0.1 && !elevatorGroundLimitPressed) {
+		if (elevatorJoystickY > 0.1 && (!elevatorGroundLimitPressed && elevatorPot.getValue() >= 200)) {
 			elevatorMotor.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "DOWN");
-		} else if (elevatorJoystickY < -0.1 && !elevatorMaxLimitPressed) {
+		} else if (elevatorJoystickY < -0.1 && (!elevatorMaxLimitPressed && elevatorPot.getValue() <= 2615)) {
 			elevatorMotor.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "UP");
 		} else {
@@ -472,8 +470,8 @@ public class Robot extends IterativeRobot {
 		}
 	}
 
-	public void angleIntake() {
-		if (elevatorGroundLimit.get()) {
+	public void tiltIntake() {
+		if (elevatorGroundLimit.get() || buttonIsPressed(XBoxButtons.X)) {
 			intakeLiftSolenoid.set(DoubleSolenoid.Value.kForward);
 		} else {
 			intakeLiftSolenoid.set(DoubleSolenoid.Value.kReverse);
@@ -526,11 +524,14 @@ public class Robot extends IterativeRobot {
 		// positive is shooting out
 	}
 	
-	public boolean checkIfTooLow(boolean goingToSwitch) {
-		int switchHeight = 3;
-		int scaleHeight = 5;
-		int correctOutput = goingToSwitch? switchHeight : scaleHeight;
-		if(correctOutput > elevatorPot.getValue()) {
+	public boolean checkIfTooLow(int targetHeight) {
+		//had parameter boolean goingToSwitch
+//		int switchHeight = 800;
+//		int scaleHeight = 2620;
+//		int correctOutput = goingToSwitch? switchHeight : scaleHeight;
+//		if(correctOutput > elevatorPot.getValue()) {
+			
+		if(targetHeight > elevatorPot.getValue()) {
 			return true;
 		}
 		return false;
@@ -553,7 +554,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 2:
-			if (checkIfTooLow(true)) {
+			if (checkIfTooLow(1200)) {
 				moveElevator(-0.75);
 			} else {
 				autoState++;
@@ -682,7 +683,7 @@ public class Robot extends IterativeRobot {
 		case 4:
 			if (checkIfNotDoneMoving(turntDistance, 2.0)) {
 				driveForward(-0.4);
-				if (checkIfTooLow(true)) {
+				if (checkIfTooLow(1200)) {
 					moveElevator(-0.85);
 				} else {
 					moveElevator(0);
@@ -898,9 +899,10 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 7:
-			if (checkIfTooLow(false)) {
+			if (checkIfTooLow(2621)) {
 				moveElevator(-0.4);
 			} else {
+				intakeLiftSolenoid.set(DoubleSolenoid.Value.kReverse);
 				autoState++;
 			}
 			break;
