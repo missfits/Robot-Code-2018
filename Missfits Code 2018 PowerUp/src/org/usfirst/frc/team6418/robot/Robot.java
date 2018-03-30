@@ -74,7 +74,7 @@ public class Robot extends IterativeRobot {
 	public Compressor compressor = new Compressor(0);
 	public DoubleSolenoid intakeSolenoid = new DoubleSolenoid(2, 3);
 	public DoubleSolenoid climberSolenoid = new DoubleSolenoid(0, 1);
-	public DoubleSolenoid intakeLiftSolenoid = new DoubleSolenoid(4, 5);
+	public DoubleSolenoid intakeTiltSolenoid = new DoubleSolenoid(4, 5);
 
 	public Timer autoTimer = new Timer();
 	public Timer solenoidTimer = new Timer();
@@ -178,6 +178,7 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("Scale Left? (1 = true) ", scaleIsLeftState);
 		SmartDashboard.putNumber("Auto State:", autoState);
 		smartDashboardEncoders();
+		SmartDashboard.putNumber("Potentiometer Output", elevatorPot.getValue());
 	}
 
 	@Override
@@ -472,9 +473,9 @@ public class Robot extends IterativeRobot {
 
 	public void tiltIntake() {
 		if (elevatorGroundLimit.get() || buttonIsPressed(XBoxButtons.X)) {
-			intakeLiftSolenoid.set(DoubleSolenoid.Value.kForward);
+			intakeTiltSolenoid.set(DoubleSolenoid.Value.kForward);
 		} else {
-			intakeLiftSolenoid.set(DoubleSolenoid.Value.kReverse);
+			intakeTiltSolenoid.set(DoubleSolenoid.Value.kReverse);
 		}
 	}
 
@@ -520,7 +521,7 @@ public class Robot extends IterativeRobot {
 	public void dropCube() {
 		// unnecessary
 	//	openIntake();
-		runIntake(0.4);
+		runIntake(0.6);
 		// positive is shooting out
 	}
 	
@@ -554,7 +555,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 2:
-			if (checkIfTooLow(1200)) {
+			if (checkIfTooLow(1300)) {
 				moveElevator(-0.75);
 			} else {
 				autoState++;
@@ -569,7 +570,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 4:
 			if (autoTimer.get() < 1.0) {
-				runIntake(0.5);
+				runIntake(0.7);
 			} else {
 				openIntake();
 				autoState++;
@@ -683,7 +684,7 @@ public class Robot extends IterativeRobot {
 		case 4:
 			if (checkIfNotDoneMoving(turntDistance, 2.0)) {
 				driveForward(-0.4);
-				if (checkIfTooLow(1200)) {
+				if (checkIfTooLow(1300)) {
 					moveElevator(-0.85);
 				} else {
 					moveElevator(0);
@@ -712,7 +713,7 @@ public class Robot extends IterativeRobot {
 		case 7:
 
 			if (autoTimer.get() < 1.0) {
-				runIntake(0.5);
+				runIntake(0.7);
 			} else {
 				openIntake();
 				autoState++;
@@ -801,7 +802,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 6:
 			if (autoTimer.get() < 1.0) {
-				runIntake(0.5);
+				runIntake(0.7);
 			} else {
 				autoState++;
 			}
@@ -900,9 +901,9 @@ public class Robot extends IterativeRobot {
 			break;
 		case 7:
 			if (checkIfTooLow(2621)) {
-				moveElevator(-0.4);
+				moveElevator(-0.9);
 			} else {
-				intakeLiftSolenoid.set(DoubleSolenoid.Value.kReverse);
+				intakeTiltSolenoid.set(DoubleSolenoid.Value.kReverse);
 				autoState++;
 			}
 			break;
@@ -915,7 +916,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 9:
 			if (autoTimer.get() < 1.0) {
-				runIntake(0.5);
+				runIntake(0.7);
 			} else {
 				autoState++;
 			}
