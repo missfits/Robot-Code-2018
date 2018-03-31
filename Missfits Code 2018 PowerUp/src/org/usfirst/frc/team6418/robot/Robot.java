@@ -115,9 +115,9 @@ public class Robot extends IterativeRobot {
 		usingEncoders.addObject("Timer", false);
 		SmartDashboard.putData("Using Encoders", usingEncoders);
 
-		autoStrategy.addDefault("Switch From Inside", AutoStrategy.ISWITCH);
+		autoStrategy.addDefault("Only Straight", AutoStrategy.STRAIGHT);
+		autoStrategy.addObject("Switch", AutoStrategy.ISWITCH);
 		autoStrategy.addObject("Fancy Scale", AutoStrategy.SCALE);
-		autoStrategy.addObject("Only Straight", AutoStrategy.STRAIGHT);
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
 
@@ -128,10 +128,13 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void disabledInit() {
+		//System.out.println("Disabled Init");
 	}
 
 	@Override
 	public void disabledPeriodic() {
+		/*System.out.println("Disabled Periodic");
+		System.out.println(autoStrategy.getSelected());*/
 	}
 
 	@Override
@@ -162,7 +165,8 @@ public class Robot extends IterativeRobot {
 				fancyScale(true);
 			} else if ((scaleIsLeftState == 1 && startPosition.getSelected() == StartingPosition.RIGHT)
 					|| (scaleIsLeftState == 0 && startPosition.getSelected() == StartingPosition.LEFT)) {
-				fancyScale(false);
+				//fancyScale(false);
+				driveStraightOnly();
 			} else if (startPosition.getSelected() == StartingPosition.MIDDLE) {
 				middleAuto();
 			} else {
