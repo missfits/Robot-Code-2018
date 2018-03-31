@@ -115,9 +115,9 @@ public class Robot extends IterativeRobot {
 		usingEncoders.addObject("Timer", false);
 		SmartDashboard.putData("Using Encoders", usingEncoders);
 
-		autoStrategy.addDefault("Only Straight", AutoStrategy.STRAIGHT);
+		autoStrategy.addObject("Only Straight", AutoStrategy.STRAIGHT);
 		autoStrategy.addObject("Switch", AutoStrategy.ISWITCH);
-		autoStrategy.addObject("Fancy Scale", AutoStrategy.SCALE);
+		autoStrategy.addDefault("Fancy Scale", AutoStrategy.SCALE);
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
 
@@ -165,8 +165,7 @@ public class Robot extends IterativeRobot {
 				fancyScale(true);
 			} else if ((scaleIsLeftState == 1 && startPosition.getSelected() == StartingPosition.RIGHT)
 					|| (scaleIsLeftState == 0 && startPosition.getSelected() == StartingPosition.LEFT)) {
-				//fancyScale(false);
-				driveStraightOnly();
+				fancyScale(false);
 			} else if (startPosition.getSelected() == StartingPosition.MIDDLE) {
 				middleAuto();
 			} else {
@@ -372,6 +371,18 @@ public class Robot extends IterativeRobot {
 		}
 		return true;
 	}
+	
+	public boolean checkIfNotDoneMovingBackwards(double distance, double time) {
+		if (usingEncoders.getSelected() && getLeftEncoderValue() >= (distance / 18.85) * 4096) {
+			return true;
+		} else if (!usingEncoders.getSelected() && autoTimer.get() >= time) {
+			return true;
+		}
+		return false;
+	}
+	
+	
+	
 
 	public void stopDrive() {
 		kFrontLeftChannel.set(ControlMode.PercentOutput, 0.0);
@@ -860,6 +871,13 @@ public class Robot extends IterativeRobot {
 				// 195 with 0.5
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.8);
+				if(sameSide) {
+					if (checkIfTooLow(1500)) {
+						moveElevator(-0.85);
+					}else {
+						moveElevator(0);
+					}
+				}
 			} else {
 				autoState++;
 			}
@@ -876,7 +894,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 3:
-			if (autoTimer.get() < 0.5) {
+			if (autoTimer.get() < 3.5) {
 				stopDrive();
 			} else {
 				autoState++;
@@ -892,6 +910,11 @@ public class Robot extends IterativeRobot {
 		case 5:
 			if (checkIfNotTurnt(oppositeAngle2)) {
 				turnToAngle(oppositeAngle2);
+				if (checkIfTooLow(2621)) {
+					moveElevator(-0.85);
+				}else {
+					moveElevator(0);
+				}
 			} else {
 				autoState = 7;
 			}
@@ -899,6 +922,11 @@ public class Robot extends IterativeRobot {
 		case 6:
 			if (checkIfNotTurnt(sameSideAngle)) {
 				turnToAngle(sameSideAngle);
+				if (checkIfTooLow(2621)) {
+					moveElevator(-0.85);
+				}else {
+					moveElevator(0);
+				}
 			} else {
 				autoState++;
 			}
@@ -914,6 +942,7 @@ public class Robot extends IterativeRobot {
 		case 8:
 			if (checkIfNotDoneMoving(36, 0.2)) {
 				driveStraight(-0.25);
+				
 			} else {
 				autoState++;
 			}
@@ -922,6 +951,25 @@ public class Robot extends IterativeRobot {
 			if (autoTimer.get() < 1.0) {
 				runIntake(0.7);
 			} else {
+				autoState++;
+			}
+			break;
+		case 10:
+			if(checkIfNotDoneMovingBackwards(-12,1.0)) {
+				driveForward(0.25);
+			}else {
+				autoState++;
+			}
+			break;
+		case 11:
+			if(checkIfNotDoneMovingBackwards(-72,5.0)) {
+				driveForward(0.25);
+				if(elevatorPot.getValue() > 1000) {
+					moveElevator(0.5);
+				}else {
+					moveElevator(0);
+				}
+			}else{
 				autoState++;
 			}
 			break;
