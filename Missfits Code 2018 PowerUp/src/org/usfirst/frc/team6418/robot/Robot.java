@@ -252,18 +252,30 @@ public class Robot extends IterativeRobot {
 			intakeRight.set(0);
 		}
 
-		if (Math.abs(rightJoystickX) > 0.4) {
-			kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX);
-			kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX);
-			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX);
-			kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX);
-			// manual strafing
-		} else {
-			kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-			kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-			kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-			// manual tank drive
+		if(buttonIsPressed(XBoxButtons.Y)){
+			stopDrive();
+		}else {
+			if (Math.abs(rightJoystickX) > 0.4) {
+				kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX);
+				kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX);
+				kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX);
+				kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX);
+				// manual strafing
+			} else {
+				if(Math.abs(leftJoystickY) < 0.3) {
+					kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
+					kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
+				}else {
+					capSpeed("L",leftJoystickY);
+				}
+				if (Math.abs(rightJoystickY) < 0.3) {
+					kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
+					kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
+				}else {
+					capSpeed("R",rightJoystickY);
+				}
+				// manual tank drive
+			}
 		}
 
 		SmartDashboard.putBoolean("Elevator Ground Limit Pressed", elevatorGroundLimitPressed);
@@ -313,6 +325,26 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void testPeriodic() {
+	}
+	
+	public void capSpeed(String side, double joystick) {
+		if(side == "L") {
+			if (joystick > 0) {
+				kFrontLeftChannel.set(ControlMode.PercentOutput,  getVoltageCompensationMultipler()*0.3);
+				kRearLeftChannel.set(ControlMode.PercentOutput,  getVoltageCompensationMultipler()*0.3);
+			}else {
+				kFrontLeftChannel.set(ControlMode.PercentOutput,  -0.3*getVoltageCompensationMultipler());
+				kRearLeftChannel.set(ControlMode.PercentOutput,  -0.3*getVoltageCompensationMultipler());
+			}
+		}else if(side == "R") {
+			if (joystick > 0) {
+				kFrontRightChannel.set(ControlMode.PercentOutput,  getVoltageCompensationMultipler()*0.3);
+				kRearRightChannel.set(ControlMode.PercentOutput,  getVoltageCompensationMultipler()*0.3);
+			}else {
+				kFrontRightChannel.set(ControlMode.PercentOutput,  -0.3*getVoltageCompensationMultipler());
+				kRearRightChannel.set(ControlMode.PercentOutput,  -0.3*getVoltageCompensationMultipler());
+			}
+		}
 	}
 
 	public boolean buttonIsPressed(XBoxButtons button) {
