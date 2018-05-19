@@ -39,6 +39,10 @@ enum XBoxAxes {
 	DONOTUSE, LEFT_Y, LEFT_TRIGGER, RIGHT_TRIGGER, DONOTUSE2, RIGHT_Y
 }
 
+enum SpeedCapBool{
+	YES, NO
+}
+
 public class Robot extends IterativeRobot {
 
 	//Spark intakeRight = new Spark(0);
@@ -92,6 +96,7 @@ public class Robot extends IterativeRobot {
 	SendableChooser<StartingPosition> startPosition = new SendableChooser<>();
 	SendableChooser<Boolean> usingEncoders = new SendableChooser<>();
 	SendableChooser<AutoStrategy> autoStrategy = new SendableChooser<>();
+	SendableChooser<SpeedCapBool> speedCap = new SendableChooser<>();
 
 	public int elevatorZone = 1;
 
@@ -120,6 +125,10 @@ public class Robot extends IterativeRobot {
 		autoStrategy.addDefault("Fancy Scale", AutoStrategy.SCALE);
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
+		
+		speedCap.addObject("Yeet", SpeedCapBool.YES);
+		speedCap.addDefault("Nah Bro", SpeedCapBool.NO);
+		SmartDashboard.putData("Cap Speed?", speedCap);
 
 		// operating compressor
 		compressor.setClosedLoopControl(true);
@@ -251,7 +260,7 @@ public class Robot extends IterativeRobot {
 			intakeLeft.set(0);
 			intakeRight.set(0);
 		}
-
+		
 		if(buttonIsPressed(XBoxButtons.Y)){
 			stopDrive();
 		}else {
@@ -262,17 +271,24 @@ public class Robot extends IterativeRobot {
 				kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX);
 				// manual strafing
 			} else {
-				if(Math.abs(leftJoystickY) < 0.3) {
+				if(speedCap.getSelected() == SpeedCapBool.YES) {
+					if(Math.abs(leftJoystickY) < 0.3) {
+						kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
+						kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
+					}else {
+						capSpeed("L",leftJoystickY);
+					}
+					if (Math.abs(rightJoystickY) < 0.3) {
+						kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
+						kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
+					}else {
+						capSpeed("R",rightJoystickY);
+					}
+				}else {
 					kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
 					kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-				}else {
-					capSpeed("L",leftJoystickY);
-				}
-				if (Math.abs(rightJoystickY) < 0.3) {
 					kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
 					kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-				}else {
-					capSpeed("R",rightJoystickY);
 				}
 				// manual tank drive
 			}
