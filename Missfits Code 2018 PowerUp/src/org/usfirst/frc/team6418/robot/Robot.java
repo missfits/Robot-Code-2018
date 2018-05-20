@@ -39,10 +39,6 @@ enum XBoxAxes {
 	DONOTUSE, LEFT_Y, LEFT_TRIGGER, RIGHT_TRIGGER, DONOTUSE2, RIGHT_Y
 }
 
-enum SpeedCapBool{
-	YES, NO
-}
-
 public class Robot extends IterativeRobot {
 
 	//Spark intakeRight = new Spark(0);
@@ -96,7 +92,7 @@ public class Robot extends IterativeRobot {
 	SendableChooser<StartingPosition> startPosition = new SendableChooser<>();
 	SendableChooser<Boolean> usingEncoders = new SendableChooser<>();
 	SendableChooser<AutoStrategy> autoStrategy = new SendableChooser<>();
-	SendableChooser<SpeedCapBool> speedCap = new SendableChooser<>();
+	SendableChooser<Boolean> speedCap = new SendableChooser<>();
 
 	public int elevatorZone = 1;
 
@@ -126,8 +122,8 @@ public class Robot extends IterativeRobot {
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
 		
-		speedCap.addObject("Yeet", SpeedCapBool.YES);
-		speedCap.addDefault("Nah Bro", SpeedCapBool.NO);
+		speedCap.addObject("Yeet", true);
+		speedCap.addDefault("Nah Bro", false);
 		SmartDashboard.putData("Cap Speed?", speedCap);
 
 		// operating compressor
@@ -271,7 +267,7 @@ public class Robot extends IterativeRobot {
 				kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX);
 				// manual strafing
 			} else {
-				if(speedCap.getSelected() == SpeedCapBool.YES) {
+				if(speedCap.getSelected()) {
 					if(Math.abs(leftJoystickY) < 0.3) {
 						kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
 						kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
