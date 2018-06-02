@@ -20,8 +20,7 @@ import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-//TODO
-//import com.kauailabs.navx.frc.AHRS;
+
 
 enum StartingPosition {
 	LEFT, MIDDLE, RIGHT
@@ -43,7 +42,6 @@ public class Robot extends IterativeRobot {
 
 	//Spark intakeRight = new Spark(0);
 	//Spark intakeLeft = new Spark(1);
-	// TODO
 	VictorSP intakeRight = new VictorSP(0);
 	VictorSP intakeLeft = new VictorSP(1);
 
@@ -122,11 +120,11 @@ public class Robot extends IterativeRobot {
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
 		
-		speedCap.addObject("Yeet", true);
+		speedCap.addObject("Cap Speed", true);
 		speedCap.addDefault("Nah Bro", false);
 		SmartDashboard.putData("Cap Speed?", speedCap);
 
-		// operating compressor
+		// operating compressor 
 		compressor.setClosedLoopControl(true);
 		closeIntake();
 	}
@@ -149,7 +147,7 @@ public class Robot extends IterativeRobot {
 		scaleIsLeftState = scaleIsLeft();
 		leftEncoderOffset = kRearLeftChannel.getSensorCollection().getPulseWidthPosition();
 		rightEncoderOffset = kRearRightChannel.getSensorCollection().getPulseWidthPosition();
-		gyro.reset();
+		gyro.reset(); 
 	}
 
 	@Override
@@ -220,7 +218,7 @@ public class Robot extends IterativeRobot {
 		tiltIntake();
 
 		if (Math.abs(climberJoystickY) >= 0.2 && climberDeployed) {
-			// TODO let the climber move backwards, move DOWN
+			// let the climber move backwards, move DOWN
 			// it's setting it to positive so positive is reeling it in.
 			climber1.set(Math.abs(climberJoystickY));
 			climber2.set(Math.abs(climberJoystickY));
@@ -228,8 +226,6 @@ public class Robot extends IterativeRobot {
 			climber1.set(0);
 			climber2.set(0);
 		}
-		// TODO maybe make a slider on the joystick into a give climber rope some slack
-		// thing
 
 		// for elevator RED is UP. Now pushing up on XBOX makes elevator drive up
 
@@ -257,39 +253,39 @@ public class Robot extends IterativeRobot {
 			intakeRight.set(0);
 		}
 		
-		if(buttonIsPressed(XBoxButtons.Y)){
-			stopDrive();
-		}else {
+		
+		if(speedCap.getSelected()) {
+			if(buttonIsPressed(XBoxButtons.Y)){
+				stopDrive();
+			}
+			kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX*0.3);
+			kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX*0.3);
+			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX*0.3);
+			kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX*0.3);
+			//speedCap tank drive
+			if (Math.abs(rightJoystickX) > 0.4) {
+				kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX*0.3);
+				kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX*0.3);
+				kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX*0.3);
+				kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX*0.3);
+				// speedCap strafing
+			}
+		}else { 
+			kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
+			kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
+			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
+			kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
+			// manual tank drive
 			if (Math.abs(rightJoystickX) > 0.4) {
 				kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX);
 				kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX);
 				kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX);
 				kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX);
 				// manual strafing
-			} else {
-				if(speedCap.getSelected()) {
-					if(Math.abs(leftJoystickY) < 0.3) {
-						kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-						kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-					}else {
-						capSpeed("L",leftJoystickY);
-					}
-					if (Math.abs(rightJoystickY) < 0.3) {
-						kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-						kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-					}else {
-						capSpeed("R",rightJoystickY);
-					}
-				}else {
-					kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-					kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-					kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-					kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-				}
-				// manual tank drive
+				
 			}
 		}
-
+		
 		SmartDashboard.putBoolean("Elevator Ground Limit Pressed", elevatorGroundLimitPressed);
 		SmartDashboard.putBoolean("Elevator Max Limit Pressed", elevatorMaxLimitPressed);
 		smartDashboardEncoders();
@@ -337,26 +333,6 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void testPeriodic() {
-	}
-	
-	public void capSpeed(String side, double joystick) {
-		if(side == "L") {
-			if (joystick > 0) {
-				kFrontLeftChannel.set(ControlMode.PercentOutput,  getVoltageCompensationMultipler()*0.3);
-				kRearLeftChannel.set(ControlMode.PercentOutput,  getVoltageCompensationMultipler()*0.3);
-			}else {
-				kFrontLeftChannel.set(ControlMode.PercentOutput,  -0.3*getVoltageCompensationMultipler());
-				kRearLeftChannel.set(ControlMode.PercentOutput,  -0.3*getVoltageCompensationMultipler());
-			}
-		}else if(side == "R") {
-			if (joystick > 0) {
-				kFrontRightChannel.set(ControlMode.PercentOutput,  getVoltageCompensationMultipler()*0.3);
-				kRearRightChannel.set(ControlMode.PercentOutput,  getVoltageCompensationMultipler()*0.3);
-			}else {
-				kFrontRightChannel.set(ControlMode.PercentOutput,  -0.3*getVoltageCompensationMultipler());
-				kRearRightChannel.set(ControlMode.PercentOutput,  -0.3*getVoltageCompensationMultipler());
-			}
-		}
 	}
 
 	public boolean buttonIsPressed(XBoxButtons button) {
@@ -515,7 +491,6 @@ public class Robot extends IterativeRobot {
 		intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
 	}
 
-	// TODO
 	public void moveElevator(double speed) {
 		// get returns true when pressed
 		if (speed < 0 && !elevatorMaxLimit.get()) {
