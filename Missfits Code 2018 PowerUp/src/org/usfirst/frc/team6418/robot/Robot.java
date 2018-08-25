@@ -217,11 +217,11 @@ public class Robot extends IterativeRobot {
 
 		tiltIntake();
 
-		if (Math.abs(climberJoystickY) >= 0.2 && climberDeployed) {
+		if (Math.abs(climberJoystickY) >= 0.2) {
 			// let the climber move backwards, move DOWN
 			// it's setting it to positive so positive is reeling it in.
-			climber1.set(Math.abs(climberJoystickY));
-			climber2.set(Math.abs(climberJoystickY));
+			climber1.set(climberJoystickY);
+			climber2.set(climberJoystickY);
 		} else {
 			climber1.set(0);
 			climber2.set(0);
