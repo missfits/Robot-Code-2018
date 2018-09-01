@@ -217,7 +217,7 @@ public class Robot extends IterativeRobot {
 
 		tiltIntake();
 
-		if (Math.abs(climberJoystickY) >= 0.2) {
+		/*if (Math.abs(climberJoystickY) >= 0.2) {
 			// let the climber move backwards, move DOWN
 			// it's setting it to positive so positive is reeling it in.
 			climber1.set(climberJoystickY);
@@ -225,18 +225,24 @@ public class Robot extends IterativeRobot {
 		} else {
 			climber1.set(0);
 			climber2.set(0);
-		}
+		}*/
 
 		// for elevator RED is UP. Now pushing up on XBOX makes elevator drive up
 
 		if (elevatorJoystickY > 0.1 && (!elevatorGroundLimitPressed && elevatorPot.getValue() >= 200)) {
-			elevatorMotor.set(elevatorJoystickY);
+			//elevatorMotor.set(elevatorJoystickY);
+			climber1.set(elevatorJoystickY);
+			climber2.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "DOWN");
 		} else if (elevatorJoystickY < -0.1 && (!elevatorMaxLimitPressed && elevatorPot.getValue() <= 2615)) {
-			elevatorMotor.set(elevatorJoystickY);
+			//elevatorMotor.set(elevatorJoystickY);
+			climber1.set(elevatorJoystickY);
+			climber2.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "UP");
 		} else {
-			elevatorMotor.set(0);
+			//elevatorMotor.set(0);
+			climber1.set(0); 
+			climber2.set(0);
 			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
 
