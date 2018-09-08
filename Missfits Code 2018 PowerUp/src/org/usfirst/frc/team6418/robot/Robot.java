@@ -228,7 +228,12 @@ public class Robot extends IterativeRobot {
 		}*/
 
 		// for elevator RED is UP. Now pushing up on XBOX makes elevator drive up
-
+		if(Math.abs(climberJoystickY) > 0) {
+			elevatorMotor.set(elevatorJoystickY);
+		}else {
+			elevatorMotor.set(0);
+		}
+		
 		if (elevatorJoystickY > 0.1 && (!elevatorGroundLimitPressed && elevatorPot.getValue() >= 200)) {
 			//elevatorMotor.set(elevatorJoystickY);
 			climber1.set(elevatorJoystickY);
