@@ -252,16 +252,17 @@ public class Robot extends IterativeRobot {
 		}
 
 		// -----controls intake wheels-----
-		// in
+		// out
 		if (getAxis(XBoxAxes.LEFT_TRIGGER) > 0.2) {
 			intakeRight.set(-0.8);
-			intakeLeft.set(-0.8);
-		} else if (getAxis(XBoxAxes.RIGHT_TRIGGER) > 0.2) {
 			intakeLeft.set(0.8);
+		//in
+		} else if (getAxis(XBoxAxes.RIGHT_TRIGGER) > 0.2) {
 			intakeRight.set(0.8);
+			intakeLeft.set(-0.8);
 		} else {
-			intakeLeft.set(0);
 			intakeRight.set(0);
+			intakeLeft.set(0);
 		}
 		
 		
