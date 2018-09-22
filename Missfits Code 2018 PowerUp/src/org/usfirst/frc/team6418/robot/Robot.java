@@ -265,39 +265,33 @@ public class Robot extends IterativeRobot {
 			intakeLeft.set(0);
 		}
 		
+		double speedCapMultiplier;
 		
 		if(speedCap.getSelected()) {
 			if(buttonIsPressed(XBoxButtons.Y)){
 				stopDrive();
 			}
-			kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX*0.3);
-			kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX*0.3);
-			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX*0.3);
-			kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX*0.3);
-			//speedCap tank drive
-			if (Math.abs(rightJoystickX) > 0.4) {
-				kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX*0.3);
-				kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX*0.3);
-				kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX*0.3);
-				kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX*0.3);
-				// speedCap strafing
-			}
-		}else { 
-			kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-			kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY);
-			kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-			kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY);
-			// manual tank drive
-			if (Math.abs(rightJoystickX) > 0.4) {
-				kFrontLeftChannel.set(ControlMode.PercentOutput, -rightJoystickX);
-				kRearRightChannel.set(ControlMode.PercentOutput, -rightJoystickX);
-				kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickX);
-				kRearLeftChannel.set(ControlMode.PercentOutput, rightJoystickX);
-				// manual strafing
-				
-			}
+			speedCapMultiplier = 0.3;
+		}else {
+			speedCapMultiplier = 1;
 		}
-		
+		// manual tank drive
+		kFrontLeftChannel.set(ControlMode.PercentOutput, leftJoystickY*speedCapMultiplier);
+		kRearLeftChannel.set(ControlMode.PercentOutput, leftJoystickY*speedCapMultiplier);
+		kFrontRightChannel.set(ControlMode.PercentOutput, rightJoystickY*speedCapMultiplier);
+		kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY*speedCapMultiplier);
+		// manual strafing
+		if (Math.abs(rightJoystickX) > 0.4) {
+			double b = -2/3;
+			if(rightJoystickX < 0) {
+				b = 2/3;
+			}
+			kFrontLeftChannel.set(ControlMode.PercentOutput, -(5*rightJoystickX/3 + b)*speedCapMultiplier);
+			kRearRightChannel.set(ControlMode.PercentOutput, -(5*rightJoystickX/3 + b)*speedCapMultiplier);
+			kFrontRightChannel.set(ControlMode.PercentOutput, (5*rightJoystickX/3 + b)*speedCapMultiplier);
+			kRearLeftChannel.set(ControlMode.PercentOutput, (5*rightJoystickX/3 + b)*speedCapMultiplier);
+		}
+
 		SmartDashboard.putBoolean("Elevator Ground Limit Pressed", elevatorGroundLimitPressed);
 		SmartDashboard.putBoolean("Elevator Max Limit Pressed", elevatorMaxLimitPressed);
 		smartDashboardEncoders();
