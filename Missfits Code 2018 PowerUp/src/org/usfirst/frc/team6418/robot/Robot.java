@@ -209,11 +209,6 @@ public class Robot extends IterativeRobot {
 
 		double elevatorJoystickY = getAxis(XBoxAxes.RIGHT_Y);
 		double climberJoystickY = getAxis(XBoxAxes.LEFT_Y);
-		// the xbox joystic is inverted (joystick down registers as positive AND the
-		// spark is wired backwards so the
-		// negatives cancell each other out
-		// gonna have to put boolean to make sure climber code doesn't run unless at
-		// right height
 
 		tiltIntake();
 
@@ -868,23 +863,14 @@ public class Robot extends IterativeRobot {
 	public void fancyScale(boolean sameSide) {
 
 		int pastState = autoState;
-		int sameSideAngle = 0, oppositeAngle1 = 0, oppositeAngle2 = 0;
-		if (sameSide) {
-			if (scaleIsLeftState == 1) {
-				sameSideAngle = 20;
-			} else if (scaleIsLeftState == 0) {
-				sameSideAngle = -20;
-			}
-		} else {
-			// not same side
-			if (scaleIsLeftState == 0) {
-				oppositeAngle1 = 89;
-				oppositeAngle2 = -120;
-			} else if (scaleIsLeftState == 1) {
-				oppositeAngle1 = -89;
-				oppositeAngle2 = 120;
-			}
+		int angleSign;
+		if(sameSide) {
+			angleSign = 1;
+		}else {
+			angleSign = -1;
 		}
+		int sameSideAngle = 20*angleSign, oppositeAngle1 = -89*angleSign, oppositeAngle2 = 120*angleSign;
+
 		switch (autoState) {
 		case 0:
 			autoTimer.reset();
@@ -893,7 +879,6 @@ public class Robot extends IterativeRobot {
 			break;
 		case 1:
 			if (checkIfNotDoneMoving(182, 2.0)) {
-				// 195 with 0.5
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.8);
 				if(sameSide) {
@@ -957,6 +942,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 7:
+			//raising elevator
 			if (checkIfTooLow(2621)) {
 				moveElevator(-0.9);
 			} else {
@@ -965,6 +951,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 8:
+			//moving up to scale
 			if (checkIfNotDoneMoving(36, 0.2)) {
 				driveStraight(-0.25);
 				
@@ -973,6 +960,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 9:
+			//shooting out cube
 			if (autoTimer.get() < 1.0) {
 				runIntake(0.7);
 			} else {
@@ -980,22 +968,86 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 10:
+			//back up from scale
 			if(checkIfNotDoneMovingBackwards(-12,1.0)) {
-				driveForward(0.25);
-			}else {
-				autoState++;
-			}
-			break;
-		case 11:
-			if(checkIfNotDoneMovingBackwards(-72,5.0)) {
 				driveForward(0.25);
 				if(elevatorPot.getValue() > 1000) {
 					moveElevator(0.5);
 				}else {
 					moveElevator(0);
 				}
-			}else{
+			}else {
 				autoState++;
+			}
+			break;
+		case 11:
+			//turn towards cube
+			if(checkIfNotTurnt(90 * angleSign)) {
+				turnToAngle(90 * angleSign);
+				if(elevatorPot.getValue() > 1000) {
+					moveElevator(0.5);
+				}else {
+					moveElevator(0);
+				}
+			}else {
+				autoState++;
+			}
+			break;
+		case 12:
+			//finish lowering elevator
+			if(elevatorPot.getValue() > 1000) {
+				moveElevator(0.5);
+			}else {
+				intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
+				intakeTiltSolenoid.set(DoubleSolenoid.Value.kForward);
+				moveElevator(0);
+				autoState++;
+			}
+			break;
+		case 13:
+			//move towards cube w/ intake wheels spinning in
+			if(checkIfNotDoneMoving(24,1.0)) {
+				driveForward(-0.4);
+				runIntake(-0.7);
+			}else {
+				autoState ++;
+			}
+			break;
+		case 14:
+			//closing jaws
+			intakeSolenoid.set(DoubleSolenoid.Value.kForward);
+			autoState++;
+			break;
+		case 15:
+			if(scaleIsLeftState == switchIsLeftState) {
+				if(elevatorPot.getValue() < 300) {
+					moveElevator(-0.5);
+				}else {
+					moveElevator(0);
+					intakeTiltSolenoid.set(DoubleSolenoid.Value.kReverse);
+					autoState++;
+				}
+			}else {
+				if(checkIfNotDoneMovingBackwards(-24,1.0)) {
+					driveForward(0.4);
+				}else {
+					autoState++;
+				}
+			}
+			break;
+		case 16:
+			if(scaleIsLeftState == switchIsLeftState) {
+				if(autoTimer.get() < 1.0) {
+					runIntake(0.7);
+				}else {
+					autoState++;
+				}
+			}else {
+				if(checkIfNotTurnt(-90)) {
+					turnToAngle(-90);
+				}else {
+					autoState++;
+				}
 			}
 			break;
 		default:
