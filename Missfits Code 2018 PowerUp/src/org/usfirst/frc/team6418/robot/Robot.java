@@ -45,8 +45,8 @@ public class Robot extends IterativeRobot {
 	VictorSP intakeRight = new VictorSP(0);
 	VictorSP intakeLeft = new VictorSP(1);
 
-	VictorSP climber1 = new VictorSP(2);
-	VictorSP climber2 = new VictorSP(3);
+	VictorSP elevatorMotor1 = new VictorSP(2);
+	VictorSP elevatorMotor2 = new VictorSP(3);
 
 	final DigitalInput elevatorGroundLimit = new DigitalInput(0);
 	final DigitalInput elevatorMaxLimit = new DigitalInput(1);
@@ -58,7 +58,7 @@ public class Robot extends IterativeRobot {
 	final TalonSRX kFrontRightChannel = new TalonSRX(1);
 	final TalonSRX kRearRightChannel = new TalonSRX(4);
 
-	Spark elevatorMotor = new Spark(4);
+	Spark climberMotor = new Spark(4);
 
 	// The channel on the driver station that the joystick is connected to
 	final int rightJoystickChannel = 0;
@@ -102,8 +102,7 @@ public class Robot extends IterativeRobot {
 
 		kFrontLeftChannel.setInverted(true);
 		kRearLeftChannel.setInverted(true);
-		// TODO may need to change or remove to match the robot
-		// do we have to change the elevator motor? we won't worry about it
+		intakeLeft.setInverted(true);
 
 		startPosition.addDefault("Left", StartingPosition.LEFT);
 		startPosition.addObject("Middle", StartingPosition.MIDDLE);
@@ -120,7 +119,7 @@ public class Robot extends IterativeRobot {
 		autoStrategy.addObject("Do Nothing", AutoStrategy.NOTHING);
 		SmartDashboard.putData("Auto Strategy", autoStrategy);
 		
-		speedCap.addObject("Cap Speed", true);
+		speedCap.addObject("Yusss", true);
 		speedCap.addDefault("Nah Bro", false);
 		SmartDashboard.putData("Cap Speed?", speedCap);
 
@@ -136,8 +135,9 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void disabledPeriodic() {
-		/*System.out.println("Disabled Periodic");
-		System.out.println(autoStrategy.getSelected());*/
+		/*System.out.println("Disabled Periodic");*/
+		System.out.println(autoStrategy.getSelected());
+		//System.out.println();
 	}
 
 	@Override
@@ -198,6 +198,8 @@ public class Robot extends IterativeRobot {
 	public void teleopPeriodic() {
 		Scheduler.getInstance().run();
 		
+		System.out.println(autoStrategy.getSelected());
+		
 		SmartDashboard.putNumber("Potentiometer Output", elevatorPot.getValue());
 
 		boolean elevatorGroundLimitPressed = elevatorGroundLimit.get();
@@ -224,25 +226,22 @@ public class Robot extends IterativeRobot {
 
 		// for elevator RED is UP. Now pushing up on XBOX makes elevator drive up
 		if(Math.abs(climberJoystickY) > 0) {
-			elevatorMotor.set(elevatorJoystickY);
+			climberMotor.set(climberJoystickY);
 		}else {
-			elevatorMotor.set(0);
+			climberMotor.set(0);
 		}
 		
-		if (elevatorJoystickY > 0.1 && (!elevatorGroundLimitPressed && elevatorPot.getValue() >= 200)) {
-			//elevatorMotor.set(elevatorJoystickY);
-			climber1.set(elevatorJoystickY);
-			climber2.set(elevatorJoystickY);
+		if (elevatorJoystickY > 0.1 && elevatorPot.getValue() >= 405) {
+			elevatorMotor1.set(elevatorJoystickY);
+			elevatorMotor2.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "DOWN");
-		} else if (elevatorJoystickY < -0.1 && (!elevatorMaxLimitPressed && elevatorPot.getValue() <= 2615)) {
-			//elevatorMotor.set(elevatorJoystickY);
-			climber1.set(elevatorJoystickY);
-			climber2.set(elevatorJoystickY);
+		} else if (elevatorJoystickY < -0.1 && elevatorPot.getValue() <= 2900) {
+			elevatorMotor1.set(elevatorJoystickY);
+			elevatorMotor2.set(elevatorJoystickY);
 			SmartDashboard.putString("Driving the elevator", "UP");
 		} else {
-			//elevatorMotor.set(0);
-			climber1.set(0); 
-			climber2.set(0);
+			elevatorMotor1.set(0); 
+			elevatorMotor2.set(0);
 			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
 
@@ -250,11 +249,11 @@ public class Robot extends IterativeRobot {
 		// out
 		if (getAxis(XBoxAxes.LEFT_TRIGGER) > 0.2) {
 			intakeRight.set(-0.8);
-			intakeLeft.set(0.8);
+			intakeLeft.set(-0.8);
 		//in
 		} else if (getAxis(XBoxAxes.RIGHT_TRIGGER) > 0.2) {
 			intakeRight.set(0.8);
-			intakeLeft.set(-0.8);
+			intakeLeft.set(0.8);
 		} else {
 			intakeRight.set(0);
 			intakeLeft.set(0);
@@ -277,9 +276,9 @@ public class Robot extends IterativeRobot {
 		kRearRightChannel.set(ControlMode.PercentOutput, rightJoystickY*speedCapMultiplier);
 		// manual strafing
 		if (Math.abs(rightJoystickX) > 0.4) {
-			double b = -2/3;
+			double b = -2.0/3.0;
 			if(rightJoystickX < 0) {
-				b = 2/3;
+				b *= -1;
 			}
 			kFrontLeftChannel.set(ControlMode.PercentOutput, -(5*rightJoystickX/3 + b)*speedCapMultiplier);
 			kRearRightChannel.set(ControlMode.PercentOutput, -(5*rightJoystickX/3 + b)*speedCapMultiplier);
@@ -287,8 +286,6 @@ public class Robot extends IterativeRobot {
 			kRearLeftChannel.set(ControlMode.PercentOutput, (5*rightJoystickX/3 + b)*speedCapMultiplier);
 		}
 
-		SmartDashboard.putBoolean("Elevator Ground Limit Pressed", elevatorGroundLimitPressed);
-		SmartDashboard.putBoolean("Elevator Max Limit Pressed", elevatorMaxLimitPressed);
 		smartDashboardEncoders();
 
 		if (buttonIsPressed(XBoxButtons.RIGHT_BUMPER)) {
@@ -381,7 +378,7 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("Left Encoder Velocity", leftPulseWidthVel);
 		SmartDashboard.putNumber("Right Encoder Velocity", rightPulseWidthVel);
 
-		SmartDashboard.putNumber("Gyro Angle:", gyro.getAngle());
+		SmartDashboard.putNumber("Gyro Angle", gyro.getAngle());
 	}
 
 	public boolean checkIfNotDoneMoving(double distance, double time) {
@@ -494,20 +491,23 @@ public class Robot extends IterativeRobot {
 
 	public void moveElevator(double speed) {
 		// get returns true when pressed
-		if (speed < 0 && !elevatorMaxLimit.get()) {
-			elevatorMotor.set(speed);
+		if (speed < 0&& elevatorPot.getValue() < 2900) {
+			elevatorMotor1.set(speed);
+			elevatorMotor2.set(speed);
 			SmartDashboard.putString("Driving the elevator", "UP");
-		} else if (speed > 0 && !elevatorGroundLimit.get()) {
-			elevatorMotor.set(speed);
+		} else if (speed > 0 && elevatorPot.getValue() > 405) {
+			elevatorMotor1.set(speed);
+			elevatorMotor2.set(speed);
 			SmartDashboard.putString("Driving the elevator", "DOWN");
 		} else {
-			elevatorMotor.set(0);
+			elevatorMotor1.set(0);
+			elevatorMotor2.set(0);
 			SmartDashboard.putString("Driving the elevator", "OFF");
 		}
 	}
 
 	public void tiltIntake() {
-		if (elevatorGroundLimit.get() || buttonIsPressed(XBoxButtons.X)) {
+		if (elevatorPot.getValue() >= 405 || buttonIsPressed(XBoxButtons.X)) {
 			intakeTiltSolenoid.set(DoubleSolenoid.Value.kForward);
 		} else {
 			intakeTiltSolenoid.set(DoubleSolenoid.Value.kReverse);
@@ -590,7 +590,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 2:
-			if (checkIfTooLow(1300)) {
+			if (checkIfTooLow(1000)) {
 				moveElevator(-0.75);
 			} else {
 				autoState++;
@@ -719,7 +719,7 @@ public class Robot extends IterativeRobot {
 		case 4:
 			if (checkIfNotDoneMoving(turntDistance, 2.0)) {
 				driveForward(-0.4);
-				if (checkIfTooLow(1300)) {
+				if (checkIfTooLow(1000)) {
 					moveElevator(-0.85);
 				} else {
 					moveElevator(0);
@@ -882,7 +882,7 @@ public class Robot extends IterativeRobot {
 				// robot is 3'3", 38 in, 99 cm
 				driveStraight(-0.8);
 				if(sameSide) {
-					if (checkIfTooLow(1500)) {
+					if (checkIfTooLow(2900)) {
 						moveElevator(-0.85);
 					}else {
 						moveElevator(0);
@@ -920,7 +920,7 @@ public class Robot extends IterativeRobot {
 		case 5:
 			if (checkIfNotTurnt(oppositeAngle2)) {
 				turnToAngle(oppositeAngle2);
-				if (checkIfTooLow(2621)) {
+				if (checkIfTooLow(2900)) {
 					moveElevator(-0.85);
 				}else {
 					moveElevator(0);
@@ -932,7 +932,7 @@ public class Robot extends IterativeRobot {
 		case 6:
 			if (checkIfNotTurnt(sameSideAngle)) {
 				turnToAngle(sameSideAngle);
-				if (checkIfTooLow(2621)) {
+				if (checkIfTooLow(2900)) {
 					moveElevator(-0.85);
 				}else {
 					moveElevator(0);
@@ -943,7 +943,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 7:
 			//raising elevator
-			if (checkIfTooLow(2621)) {
+			if (checkIfTooLow(2900)) {
 				moveElevator(-0.9);
 			} else {
 				intakeTiltSolenoid.set(DoubleSolenoid.Value.kReverse);
@@ -971,7 +971,7 @@ public class Robot extends IterativeRobot {
 			//back up from scale
 			if(checkIfNotDoneMovingBackwards(-12,1.0)) {
 				driveForward(0.25);
-				if(elevatorPot.getValue() > 1000) {
+				if(elevatorPot.getValue() > 405) {
 					moveElevator(0.5);
 				}else {
 					moveElevator(0);
@@ -984,7 +984,7 @@ public class Robot extends IterativeRobot {
 			//turn towards cube
 			if(checkIfNotTurnt(90 * angleSign)) {
 				turnToAngle(90 * angleSign);
-				if(elevatorPot.getValue() > 1000) {
+				if(elevatorPot.getValue() > 405) {
 					moveElevator(0.5);
 				}else {
 					moveElevator(0);
@@ -995,7 +995,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 12:
 			//finish lowering elevator
-			if(elevatorPot.getValue() > 1000) {
+			if(elevatorPot.getValue() > 405) {
 				moveElevator(0.5);
 			}else {
 				intakeSolenoid.set(DoubleSolenoid.Value.kReverse);
@@ -1020,7 +1020,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case 15:
 			if(scaleIsLeftState == switchIsLeftState) {
-				if(elevatorPot.getValue() < 300) {
+				if(elevatorPot.getValue() < 1000) {
 					moveElevator(-0.5);
 				}else {
 					moveElevator(0);
